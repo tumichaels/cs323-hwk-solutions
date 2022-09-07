@@ -1,0 +1,8 @@
+/*Right to left text*/
+.yale_vertical_lr { writing-mode: vertical-lr; }
+.yale_vertical_rl { writing-mode: vertical-rl; }
+
+/*Accordion height*/
+.ui-accordion-content {
+height: auto !important;
+}

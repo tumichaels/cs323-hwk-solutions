@@ -45,6 +45,8 @@ q_create(void){
 	Queue q = malloc(sizeof(struct queue));
 	q->head = NULL;
 	q->tail = NULL;
+
+    return q;
 }
 
 void

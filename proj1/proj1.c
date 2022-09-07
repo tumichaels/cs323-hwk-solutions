@@ -1,54 +1,113 @@
 #include "proj1.h"
 #include "queue.h"
+#include <assert.h>
 
-// for now we pretend all input comes from stdin
-// should be able to modify this to take other
-// input / output sources like getc does
-void
-add_input_to_queue(Queue q) {
+// we model off of assignment 6 from cs223
 
-	// buffer info
-	int plaintext = true;
+int process_file(char *filename);
+char * eval_macros(char *input, size_t input_size);
 
-	size_t top = 0;
-	size_t buff_size = 16;
-	// I should only malloc if needed, not sure when
-	int *buff = malloc(sizeof(int)*buff_size);
 
-	int nextchar;
+#define STR_SIZE (16)
 
-	// TODO: change getchar
-	// to getc at some point
-	while((nextchar = getchar()) != EOF) {
-		
-		if (plaintext && nextchar == '\\'){
-			// add a plaintext block to q
-			buff = realloc(buff, sizeof(int)*top);
-			struct elt *e = elt_create(buff, true);
-			enq(q, e);
-			
-			// change buffer to macro mode
-			plaintext = false;
-			top = 0;
+char *
+add_char(char *ptr, size_t top, size_t ptr_size, int c) {
+    if (top >= ptr_size) {
+        ptr = DOUBLE(ptr, ptr_size);
+    }
 
-		} else if (!(plaintext) && !isalnum(nextchar)) {
-			DIE("ERROR: non-alphanumeric character in macro name");
-		} else {
-			// dynamic buffer add
-			if (top >= buff_size) {
-				buff_size *= 2;
-				realloc(buff, sizeof(int)*buff_size);
-			}
+    ptr[top] = c;
+    top++;
 
-			buff[top] = nextchar;
-			top++;
-		}
-	}
-	
+    return ptr;
 }
 
+int main() {
 
-// we also need a search function that can look
-// up macro names
-int
-find_macro(int *name) {}
+    // this grabs all user input and stuffs it in a buffer
+    // the advantage to doing this over reading the input
+    // directly is when you expand you don't need to switch
+    // between stdin and a buffer, just between buffers
+    size_t input_size = STR_SIZE;
+    char *input = malloc(input_size);
+    size_t top = 0;
+
+    int nextchar;
+
+    while((nextchar = getchar()) != EOF) {
+        input = add_char(input, top, input_size, nextchar);
+    }
+
+    input_size = top;
+    input = realloc(input, input_size);
+
+}
+
+enum s {PTEXT, ESC, MACRO} state;
+
+char *
+eval_macros(char *input, size_t input_size) {
+
+    size_t out_size = STR_SIZE;
+    char *out = malloc(out_size);
+    size_t top = 0;
+
+    
+    state = PTEXT;
+
+    for (int i = 0; i < input_size; i++) {
+
+        int nextchar = input[i];
+
+        switch (state) {
+
+            case PTEXT:
+                if (nextchar == '\\') {
+                    state = ESC;
+                } else {
+                    out = add_char(out, top, out_size, nextchar); 
+                }
+                break;
+
+            case ESC:
+                switch (nextchar) {
+                    case '%':
+                    case '\\':
+                    case '{':
+                    case '}':
+                    case '#':
+                        add_char(out, top, out_size, nextchar);
+                        break;
+
+                    default:
+                        i--; // look at this char again next time around
+                        break;
+                }
+            
+            case MACRO:
+                // from above we know this won't be an escape
+                assert(nextchar != '}');
+
+                size_t macro_size = STR_SIZE;
+                char *macro = malloc(macro_size);
+                size_t top = 0;
+
+                while(isalnum(nextchar)) {
+                    nextchar = input[i];
+                    macro = add_char(macro, top, macro_size, nextchar);
+                    i++;
+                }
+
+                if (nextchar != '{') {
+                    DIE("%s", "ERROR: macro names may not contain \
+                               alphanumeric characters");
+                }
+
+                // here comes actual macro evaluation :(
+        }
+
+
+    }
+
+}
+

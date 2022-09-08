@@ -2,6 +2,8 @@
 #include <assert.h>
 #include "string_t.h"
 
+enum read_states {PTEXT, ESC, COMM, END_COMM};
+
 int main() {
 
     // this grabs all user input and stuffs it in a buffer
@@ -11,12 +13,59 @@ int main() {
     String_t input = str_create(); 
     int nextchar;
 
+    enum read_states state = PTEXT;
+
     while((nextchar = getchar()) != EOF) {
-        str_add_char(input, nextchar);
+
+        switch (state) {
+
+            case PTEXT:
+                switch (nextchar) {
+                    case '%':
+                        state = PTEXT;
+                        break;
+
+                    case '\\':
+                        state = ESC;
+                        str_add_char(input, nextchar);
+                        break;
+
+                    default:
+                        str_add_char(input, nextchar);
+                        break;
+                }
+                break;
+
+            case ESC:
+                str_add_char(input, nextchar);
+                state = PTEXT;
+                break;
+
+            case COMM:
+                if (nextchar == '\n') {
+                    state = END_COMM;
+                }
+                break;
+
+            case END_COMM:
+                switch (nextchar) {
+                    case ' ':
+                    case '\t':
+                        break;
+                    
+                    default:
+                        state = PTEXT;
+                        break;
+                }
+
+            default:
+                DIE("%s", "switch error when reading input");
+                break;
+        }
     }
 }
 
-enum s {PTEXT, ESC, MACRO, COMM} state;
+enum parse_states {PTEXT, ESC, MACRO};
 
 // get yourself a better function name
 String_t
@@ -24,7 +73,7 @@ state_machine(String_t input) {
 
     String_t out = str_create();
 
-    state = PTEXT;
+    enum parse_states state = PTEXT;
 
     for (int i = 0; i < str_len(input); i++) {
 
@@ -38,10 +87,6 @@ state_machine(String_t input) {
 
                     case '\\':
                         state = ESC;
-                        break;
-
-                    case '%':
-                        state = COMM;
                         break;
 
                     default:

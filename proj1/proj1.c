@@ -1,26 +1,6 @@
 #include "proj1.h"
-#include "queue.h"
 #include <assert.h>
-
-// we model off of assignment 6 from cs223
-
-int process_file(char *filename);
-char * eval_macros(char *input, size_t input_size);
-
-
-#define STR_SIZE (16)
-
-char *
-add_char(char *ptr, size_t top, size_t ptr_size, int c) {
-    if (top >= ptr_size) {
-        ptr = DOUBLE(ptr, ptr_size);
-    }
-
-    ptr[top] = c;
-    top++;
-
-    return ptr;
-}
+#include "string_t.h"
 
 int main() {
 
@@ -28,44 +8,45 @@ int main() {
     // the advantage to doing this over reading the input
     // directly is when you expand you don't need to switch
     // between stdin and a buffer, just between buffers
-    size_t input_size = STR_SIZE;
-    char *input = malloc(input_size);
-    size_t top = 0;
-
+    String_t input = str_create(); 
     int nextchar;
 
     while((nextchar = getchar()) != EOF) {
-        input = add_char(input, top, input_size, nextchar);
+        str_add_char(input, nextchar);
     }
-
-    input_size = top;
-    input = realloc(input, input_size);
-
 }
 
-enum s {PTEXT, ESC, MACRO} state;
+enum s {PTEXT, ESC, MACRO, COMM} state;
 
-char *
-eval_macros(char *input, size_t input_size) {
+// get yourself a better function name
+String_t
+state_machine(String_t input) {
 
-    size_t out_size = STR_SIZE;
-    char *out = malloc(out_size);
-    size_t top = 0;
+    String_t out = str_create();
 
-    
     state = PTEXT;
 
-    for (int i = 0; i < input_size; i++) {
+    for (int i = 0; i < str_len(input); i++) {
 
-        int nextchar = input[i];
+        int nextchar = str_get_char(input, i);
 
         switch (state) {
 
+            // TODO: Comments!!!
             case PTEXT:
-                if (nextchar == '\\') {
-                    state = ESC;
-                } else {
-                    out = add_char(out, top, out_size, nextchar); 
+                switch (nextchar) {
+
+                    case '\\':
+                        state = ESC;
+                        break;
+
+                    case '%':
+                        state = COMM;
+                        break;
+
+                    default:
+                        str_add_char(input, nextchar);
+                        break;
                 }
                 break;
 
@@ -76,38 +57,89 @@ eval_macros(char *input, size_t input_size) {
                     case '{':
                     case '}':
                     case '#':
-                        add_char(out, top, out_size, nextchar);
+                        str_add_char(input, nextchar);
                         break;
 
                     default:
                         i--; // look at this char again next time around
+                        state = MACRO;
                         break;
                 }
-            
+
             case MACRO:
                 // from above we know this won't be an escape
-                assert(nextchar != '}');
+                assert(nextchar != '\\');
 
-                size_t macro_size = STR_SIZE;
-                char *macro = malloc(macro_size);
-                size_t top = 0;
+                String_t macro = str_create();
 
+                // we're now manually advancing where we are in the count
+                // might want to set up a separate variable for this loop
+                // then I can recombine at the ende
                 while(isalnum(nextchar)) {
-                    nextchar = input[i];
-                    macro = add_char(macro, top, macro_size, nextchar);
+                    nextchar = str_get_char(input, i); 
+                    str_add_char(macro, nextchar);
                     i++;
                 }
 
                 if (nextchar != '{') {
                     DIE("%s", "ERROR: macro names may not contain \
-                               alphanumeric characters");
+                            non-alphanumeric characters");
                 }
 
                 // here comes actual macro evaluation :(
+                int num_args = find_macro(macro);
+
+                if (num_args == 0) {
+                    DIE("%s", "ERROR: could not find macro with \
+                            given name");
+                }
+
+                // store all args in an array?
+                String_t args[num_args];
+                for (int j=0; j < num_args; j++) {
+                    args[j] = str_create();
+
+                    assert(nextchar == '{');
+                    i++; //move on from start of first brace
+                    nextchar = str_get_char(input, i);
+
+                    // simple state machine to collect args
+                    // we'll make it a function later
+                    int brace_balance = 0;
+
+                    // "while ending cond isn't true  xP"
+                    //  i can write a solution that doesn't
+                    //  break the convention, but it will
+                    //  mean some of my variables get desync'd
+                    //  probably dangerous!!!
+                    while(!(nextchar == '}' && brace_balance == 0)) {
+                        nextchar = str_get_char(input, i);
+                        switch(nextchar){
+
+                            case '{':
+                                brace_balance++;
+                                break;
+
+                            case '}':
+                                brace_balance--;
+                                break;
+
+                            default:
+                                break;
+                        }
+                        str_add_char(args[j], nextchar);
+                        i++;
+                    }
+                }
+
+                // now we have to actually do the macros
+                String_t expanded = eval_macro(macro, args);
+                str_cat(out, expanded);
+
+                state = PTEXT;
         }
-
-
     }
 
+    return out;
 }
 

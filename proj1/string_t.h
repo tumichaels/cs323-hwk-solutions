@@ -71,3 +71,41 @@ str_get_char(String_t s, size_t pos) {
     assert(pos < s->top);
     return s->buff[pos];
 }
+
+// returns true if the buffers
+// contain equal content up to
+// top
+//
+int
+str_eq(String_t s1, String_t s2) {
+    if (s1->top != s2->top) {
+        return false;
+    } else {
+        for (size_t i = 0; i < s1->top; i++) {
+            if (s1->buff[i] != s2->buff[i]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
+// converts a String_t into a c
+// string. You must free this
+// output
+char *
+str_make_c_string(String_t s) {
+    char *out = malloc(s->top + 1);
+    for (int i = 0; i < s->top; i++) {
+        out[i] = s->buff[i];
+    }
+
+    out[s->top] = '\0';
+    return out;
+}
+
+int
+str_is_empty(String_t s) {
+    return s->top == 0;
+}

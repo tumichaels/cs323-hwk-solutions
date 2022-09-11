@@ -1,4 +1,5 @@
 #include "proj1.h"
+#include <stdlib.h>
 #include <assert.h>
 #include "string_t.h"
 #include "user_macro.h"

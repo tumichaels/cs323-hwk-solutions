@@ -18,7 +18,6 @@ str_create(void) {
     String_t s = malloc(sizeof (struct string_t));
     s->buff_size = STR_SIZE;
     s->buff = malloc(s->buff_size);
-
     return s;
 }
 
@@ -38,7 +37,6 @@ str_add_char(String_t s, char c) {
     if (s->top >= s->buff_size) {
         s->buff = DOUBLE(s->buff, s->buff_size);
     }
-
     s->buff[s->top] = c;
     s->top++;
 }
@@ -53,16 +51,6 @@ str_cat(String_t dest, String_t src) {
         dest->buff[dest->top] = src->buff[i];
         dest->top++;
     }
-}
-
-// "fits" the buffer to exact number
-// of characters needed. This may 
-// not be a good thing
-// so i'll avoid using it for now
-void
-str_fit(String_t s) {
-    s->buff_size = s->top;
-    s->buff = realloc(s->buff, s->buff_size);
 }
 
 // returns number of chars in the String_t
@@ -86,10 +74,7 @@ str_get_char(String_t s, size_t pos) {
 // comparing to null pointer is always false
 int
 str_eq(String_t s1, String_t s2) {
-    if (!(s1 && s2)) {
-        return false;
-    }
-    if (s1->top != s2->top) {
+    if (!(s1 && s2) || (s1->top != s2->top)) {
         return false;
     } else {
         for (size_t i = 0; i < s1->top; i++) {
@@ -101,16 +86,13 @@ str_eq(String_t s1, String_t s2) {
     }
 }
 
-// converts a String_t into a c
-// string. You must free this
-// output
+// creates a c-string based on String_t s
 char *
 str_make_c_string(String_t s) {
     char *out = malloc(s->top + 1);
     for (int i = 0; i < s->top; i++) {
         out[i] = s->buff[i];
     }
-
     out[s->top] = '\0';
     return out;
 }

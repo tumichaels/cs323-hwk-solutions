@@ -77,7 +77,7 @@ typedef String_t (*Macro_func)(Macro_list, String_t, String_t[]);
 void
 load_macro(Macro_list, String_t, int *, Macro_func, String_t);
 
-// turns any macros in input into plaintext
+// returns a string equal to expanded input 
 String_t
 parse_text(Macro_list user_macros, String_t input) {
 
@@ -134,7 +134,7 @@ parse_text(Macro_list user_macros, String_t input) {
                 String_t macro_name = parse_macro_name(input, &i); 
 
                 // not sure whether i should make a macro struct
-                String_t (*macro_func)(Macro_list, String_t, String_t[]) = NULL;
+                Macro_func macro_func = NULL;
                 int *num_args = NULL;
                 String_t macro_text = NULL; 
 
@@ -167,12 +167,9 @@ parse_text(Macro_list user_macros, String_t input) {
                 break;
         }
     }
-
-    // maybe don't destroy here
-    //str_destroy(input);
-
     return out;
 }
+
 String_t
 parse_macro_name(String_t input, int *i) {
 
@@ -233,8 +230,6 @@ parse_macro_args(String_t input, int *i, int num_args) {
     return args;
 }
 
-
-
 // custom macros
 
 /*
@@ -247,25 +242,25 @@ parse_macro_args(String_t input, int *i, int num_args) {
  */
 
 String_t
-exec_def(Macro_list user_macros, String_t text, String_t args[]);
+exec_def(Macro_list, String_t, String_t[]);
 
 String_t
-exec_undef(Macro_list user_macros, String_t text, String_t args[]);
+exec_undef(Macro_list, String_t, String_t[]);
 
 String_t
-exec_if(Macro_list user_macros, String_t text, String_t args[]);
+exec_if(Macro_list, String_t, String_t[]);
 
 String_t
-exec_ifdef(Macro_list user_macros, String_t text, String_t args[]);
+exec_ifdef(Macro_list, String_t, String_t[]);
 
 String_t
-exec_include(Macro_list user_macros, String_t text, String_t args[]);
+exec_include(Macro_list, String_t, String_t[]);
 
 String_t
-exec_expandafter(Macro_list user_macros, String_t text, String_t args[]);
+exec_expandafter(Macro_list, String_t, String_t[]);
 
 String_t
-exec_user(Macro_list user_macros, String_t text, String_t args[]);
+exec_user(Macro_list, String_t, String_t[]);
 
 void
 load_macro(Macro_list user_macros,
@@ -303,7 +298,7 @@ load_macro(Macro_list user_macros,
         *num_args = 2;
         func = &exec_expandafter;
 
-    } else if (ml_check_macro_exists(user_macros, name)){
+    } else if ((text = ml_get_macro_text(user_macros, name))){
         *num_args = 1;
         func = &exec_user;
     }
@@ -314,7 +309,7 @@ load_macro(Macro_list user_macros,
 
 String_t
 exec_def(Macro_list user_macros, String_t text, String_t args[]) {
-    if (ml_check_macro_exists(user_macros, args[0])) {
+    if (ml_get_macro_text(user_macros, args[0])) {
         DIE("%s", "ERROR: cannot define existing macro");
     } else {
         ml_add_macro(user_macros, args[0], args[1]);
@@ -341,7 +336,7 @@ exec_if(Macro_list user_macros, String_t text, String_t args[]) {
 
 String_t
 exec_ifdef(Macro_list user_macros, String_t text, String_t args[]) {
-    if(ml_check_macro_exists(user_macros, args[0])) {
+    if(ml_get_macro_text(user_macros, args[0])) {
         return args[1];
     } else {
         return args[0];

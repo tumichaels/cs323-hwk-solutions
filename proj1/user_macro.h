@@ -5,8 +5,7 @@
 // position
 
 struct macro_list {
-    // number of macro/text pairs
-    size_t top;
+    size_t top; // macro names are even
     size_t size;
     String_t *lst;
 };
@@ -34,8 +33,8 @@ ml_destroy(Macro_list ml) {
 
 void
 ml_add_macro(Macro_list ml, String_t name, String_t txt) {
-    if (ml->top + 2 > ml->size){
-        ml->size *= 2;
+    if (ml->top + 1 > ml->size){
+        ml->size *= 2; // only safe because size >= 8
         ml->lst = realloc(ml->lst, sizeof(String_t) * ml->size);
     }
     // could condense into top++ for both
@@ -44,14 +43,14 @@ ml_add_macro(Macro_list ml, String_t name, String_t txt) {
     ml->top += 2;
 }
 
-int
-ml_check_macro_exists(Macro_list ml, String_t name) {
+String_t
+ml_get_macro_text(Macro_list ml, String_t name) {
     for (size_t i = 0; i < ml->top; i+=2) {
         if (str_eq(name, ml->lst[i])) {
-            return true;
+            return ml->lst[i+1];
         }
     }
-    return false;
+    return NULL;
 }
 
 int

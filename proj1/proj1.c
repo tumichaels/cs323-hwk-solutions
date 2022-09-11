@@ -155,6 +155,7 @@ parse_text(Macro_list user_macros, String_t input) {
                 for (int j = 0; j < *num_args; j++) {
                     str_destroy(args[j]);
                 }
+                free(args);
 
                 str_cat(out, expanded);
                 str_destroy(expanded);
@@ -182,12 +183,10 @@ parse_macro_name(String_t input, int *i) {
         str_add_char(macro_name, nextchar);
         (*i)++;
     }
-
     if ('{' != nextchar) {
         DIE("%s", "ERROR: macro names may not contain \
                 non-alphanumeric characters");
     }
-
     return macro_name;
 }
 

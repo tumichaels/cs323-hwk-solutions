@@ -16,6 +16,7 @@ typedef struct string_t * String_t;
 String_t
 str_create(void) {
     String_t s = malloc(sizeof (struct string_t));
+    s->top = 0;
     s->buff_size = STR_SIZE;
     s->buff = malloc(s->buff_size);
     return s;

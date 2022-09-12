@@ -1,9 +1,0 @@
-\def{macro}{#}
-\macro{this is my replacement}
-\undef{macro}
-\def{macro}{\#}
-\macro{this is my replacement}
-\undef{macro}
-\def{macro}{\\#}
-\macro{this is my replacement}
-

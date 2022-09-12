@@ -1,3 +1,0 @@
-\def{m}{t}
-\def{m}{you can't do that!}
-

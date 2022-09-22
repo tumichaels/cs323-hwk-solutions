@@ -1,1 +1,0 @@
-test011: test011.cc:26: int main(): Assertion `x.addr + sizeof(int) < stat.heap_min || x.addr >= stat.heap_max' failed.

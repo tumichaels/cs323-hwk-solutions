@@ -1,1 +1,0 @@
-test010: test010.cc:25: int main(): Assertion `heap_max <= stat.heap_max' failed.

@@ -9,7 +9,12 @@
 // You may write code here.
 // (Helper functions, types, structs, macros, globals, etc.)
 
-typedef unsigned long long Header;
+typedef struct header {
+	size_t sz;
+	const char *file;
+	long line;
+	bool prev_free;
+} Header;
 
 unsigned long long nactive = 0;				// number of active allocations [#malloc - #free]
 unsigned long long active_size = 0;			// number of bytes in active allocations
@@ -48,8 +53,11 @@ void* dmalloc_malloc(size_t sz, const char* file, long line) {
 		return out;
 	}
 
-	// set the header to size
-	((Header *) out)[0] = sz;
+	// fill out the header 
+	Header *h = (Header *) out;
+	h->sz = sz;
+	h->file = file;
+	h->line = line;
 
 	nactive += 1;
 	active_size += sz;
@@ -80,10 +88,22 @@ void dmalloc_free(void* ptr, const char* file, long line) {
     (void) file, (void) line;   // avoid uninitialized variable warnings
     // Your code here.
 	
+	
 	if (ptr == NULL)
 		return;
 
-	Header sz = ((Header *)ptr - 1)[0];
+	// valid ptr checks
+	if ((uintptr_t)ptr < heap_min || (uintptr_t)ptr > heap_max) {
+		fprintf(stderr, "MEMORY BUG: %s: %ld: invalid free of pointer 0x%.*" PRIXPTR ", not in heap\n", 
+				file, line, (int)sizeof(uintptr_t)*2, (uintptr_t)ptr);
+		// fprintf(stderr, "\t%s: %ld: 0x%.*" PRIXPTR "is ")
+		exit(1);
+
+	}
+
+
+	// successful free results
+	size_t sz = ((Header *)ptr - 1)->sz;
 	
 	nactive -= 1;
 	active_size -= sz;

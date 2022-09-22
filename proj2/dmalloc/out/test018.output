@@ -1,0 +1,1 @@
+MEMORY BUG: test018.cc: 15: invalid free of pointer 0x0000000000000010, not in heap

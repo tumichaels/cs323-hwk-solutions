@@ -1,2 +1,1 @@
-alloc count: active 18446744073709551615   total          0   fail          0
-alloc size:  active          0   total          0   fail          0
+MEMORY BUG: test019.cc: 9: invalid free of pointer 0x00007FFEECBD091C, not in heap

@@ -1,0 +1,1 @@
+test014: test014.cc:10: int main(): Assertion `p == nullptr' failed.

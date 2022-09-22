@@ -87,15 +87,24 @@ str_cpy(String_t src) {
 	return s;
 }
 
+String_t
+str_from_c_string(char *c) {
+	String_t s = str_create();
+	for (size_t i = 0; c[i]; i++) {
+		str_add_char(s, c[i]);
+	}
+	return s;
+}
+
 void
 str_go_to_end(String_t s) {
 	s->pos = s->top;
 }
 // a string_t storage mechanism
 struct macro_list {
-    size_t top;
-    size_t size;
-    String_t *lst;
+	size_t top;
+	size_t size;
+	String_t *lst;
 };
 
 typedef struct macro_list *M_list;
@@ -103,53 +112,74 @@ typedef struct macro_list *M_list;
 
 M_list
 ml_create(void) {
-    M_list ml = malloc(sizeof(struct macro_list));
-    ml->top = 0;
-    ml->size = LST_SIZE;
-    ml->lst = malloc(sizeof(String_t) * ml->size);
-    return ml;
+	M_list ml = malloc(sizeof(struct macro_list));
+	ml->top = 0;
+	ml->size = LST_SIZE;
+	ml->lst = malloc(sizeof(String_t) * ml->size);
+
+	return ml;
 }
 
 void
 ml_destroy(M_list ml) {
-    for (size_t i=0; i<ml->top; i++) {
-	str_destroy(ml->lst[i]);
-    }
-    free(ml->lst);
-    free(ml);
+	for (size_t i=0; i<ml->top; i++) {
+		str_destroy(ml->lst[i]);
+	}
+	free(ml->lst);
+	free(ml);
 }
 
 void
 ml_add_macro(M_list ml, String_t name, String_t text) {
-    if (ml->top+1 >= ml->size) {
-	ml->size *=2; // safe bc min ml->size = 8
-	ml->lst = realloc(ml->lst, sizeof(String_t)*ml->size);
-    }
-    ml->lst[ml->top++] = str_cpy(name);
-    ml->lst[ml->top++] = str_cpy(text);
+	if (ml->top+1 >= ml->size) {
+		ml->size *=2; // safe bc min ml->size = 8
+		ml->lst = realloc(ml->lst, sizeof(String_t)*ml->size);
+	}
+	ml->lst[ml->top++] = str_cpy(name);
+	ml->lst[ml->top++] = str_cpy(text);
 }
 
 String_t
 ml_get_macro_text(M_list ml, String_t name) {
-    for (size_t i = 0; i < ml->top; i+=2) {
-        if (str_eq(name, ml->lst[i])) {
-            return ml->lst[i+1];
-        }
-    }
-    return NULL;
+
+	for (size_t i = 0; i < ml->top; i+=2) {
+		if (str_eq(name, ml->lst[i])) {
+			return ml->lst[i+1];
+		}
+	}
+	return NULL;
 }
 
-bool
+void
 ml_del_macro(M_list ml, String_t name) {
-    for (size_t i=0; i< ml->top; i+=2)
-        if(str_eq(name, ml->lst[i])) {
-            str_destroy(ml->lst[i]);
-            str_destroy(ml->lst[i+1]);
-            ml->lst[i] = NULL;
-            ml->lst[i+1] = NULL;
-            return true;
-        }
-    return false;
+	bool built_in = false;
+	bool deleted = false;
+
+	for (size_t i=0; i< ml->top; i+=2) {
+		if(str_eq(name, ml->lst[i])) {
+			str_destroy(ml->lst[i]);
+			str_destroy(ml->lst[i+1]);
+			ml->lst[i] = NULL;
+			ml->lst[i+1] = NULL;
+			deleted = true;
+		}
+	}
+
+	if (strcmp(str_as_c_string(name), "def") == 0 || 
+	    strcmp(str_as_c_string(name), "undef") == 0 || 
+	    strcmp(str_as_c_string(name), "if") == 0 || 
+	    strcmp(str_as_c_string(name), "ifdef") == 0 || 
+	    strcmp(str_as_c_string(name), "include") == 0 || 
+	    strcmp(str_as_c_string(name), "expandafter") == 0 ) {
+
+		built_in = true;
+	}
+
+	if (!deleted && built_in) {
+		DIE("%s", "ERROR: cannot undefine built-in macro");
+	} else if (!deleted && !built_in) {
+		DIE("%s", "ERROR: cannot undefine non-existent macro");
+	}
 }
 
 enum read_states {R_PTEXT, R_ESC, R_COMM, R_END_COMM};
@@ -381,9 +411,7 @@ exec_def(M_list user_macros, String_t *args) {
 
 String_t
 exec_undef(M_list user_macros, String_t *args) {
-	if (!ml_del_macro(user_macros, args[1])) {
-		DIE("%s", "ERROR: cannot undefine non-existent macro");
-	}
+	ml_del_macro(user_macros, args[1]);	
 	return str_create();
 }
 

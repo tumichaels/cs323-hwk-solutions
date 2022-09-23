@@ -1,3 +1,2 @@
-Will free 0x22c3ec8
-alloc count: active          0   total          1   fail          0
-alloc size:  active          0   total         40   fail          0
+Will free 0x4beee0
+MEMORY BUG: test025.cc:13: detected wild write during free of pointer 0x4beee0

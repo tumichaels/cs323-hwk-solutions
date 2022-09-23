@@ -1,2 +1,1 @@
-alloc count: active          0   total          1   fail          0
-alloc size:  active       4200   total       4200   fail          0
+MEMORY BUG: ?:0: invalid free of pointer 0x19c7a98, not allocated

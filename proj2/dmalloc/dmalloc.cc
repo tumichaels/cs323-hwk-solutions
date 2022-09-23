@@ -9,12 +9,29 @@
 // You may write code here.
 // (Helper functions, types, structs, macros, globals, etc.)
 
+// these macro funcs act on the ptr provided to the user 
+#define UCANARY(ptr) (*((unsigned long long *)ptr - 1))
+#define HEAD(ptr) (*((Header *)(&UCANARY(ptr)) - 1))
+#define OCANARY(ptr) (*((unsigned long long *)((uintptr_t)ptr + HEAD(ptr).sz)))
+
+#define CANARY_SIZE sizeof(unsigned long long)
+
 typedef struct header {
+	// basic stats
 	size_t sz;
 	const char *file;
 	long line;
-	bool prev_free;
+
+	// alloc ll
+	void *prev;
+	void *next;
+
+	// free protections
+	bool freed;
+	unsigned int present;
 } Header;
+
+void *last_allocd = 0x0;
 
 unsigned long long nactive = 0;				// number of active allocations [#malloc - #free]
 unsigned long long active_size = 0;			// number of bytes in active allocations
@@ -22,8 +39,6 @@ unsigned long long ntotal = 0;				// number of allocations, total
 unsigned long long total_size = 0;			// number of bytes in allocations, total
 unsigned long long nfail = 0;				// number of failed allocation attempts
 unsigned long long fail_size = 0;			// number of bytes in failed allocation attempts
-										
-// TODO: there's a better way to deal with these
 uintptr_t heap_min = 0;						// smallest address in any region ever allocated
 uintptr_t heap_max = 0;						// largest address in any region ever allocated
 
@@ -41,7 +56,7 @@ void* dmalloc_malloc(size_t sz, const char* file, long line) {
 
 	// src stack overflow: https://tinyurl.com/43kkycew
 	size_t malloc_size;
-	if (__builtin_add_overflow(sz, sizeof(Header), &malloc_size)){
+	if (__builtin_add_overflow(sz, sizeof(Header) + 2*CANARY_SIZE, &malloc_size)){
 		out = NULL;
 	} else {
 		out = base_malloc(malloc_size);
@@ -54,17 +69,32 @@ void* dmalloc_malloc(size_t sz, const char* file, long line) {
 	}
 
 	// fill out the header 
-	Header *h = (Header *) out;
+	Header* h = (Header *)out;
 	h->sz = sz;
 	h->file = file;
 	h->line = line;
+	h->prev = last_allocd;
+	h->next = NULL;
+	h->freed = false;
+	h->present = 0xdeadbeef;
 
+	// start of returned block
+	out = (void *)((uintptr_t)out + sizeof(Header) + CANARY_SIZE);
+
+	// update ll
+	if (h->prev)
+		HEAD(h->prev).next = out;
+
+	// set canaries
+	UCANARY(out) = 0xdeadbeefdeadbeef;
+	OCANARY(out) = 0xdeadbeefdeadbeef;
+
+	// update stats
+	last_allocd = out;
 	nactive += 1;
 	active_size += sz;
 	ntotal += 1;
 	total_size += sz;
-
-	out = (Header *)out + 1; // actual address given to user 
 
 	if (ntotal == 1) {
 		heap_min = (uintptr_t) out;
@@ -94,19 +124,49 @@ void dmalloc_free(void* ptr, const char* file, long line) {
 
 	// valid ptr checks
 	if ((uintptr_t)ptr < heap_min || (uintptr_t)ptr > heap_max) {
-		fprintf(stderr, "MEMORY BUG: %s: %ld: invalid free of pointer 0x%.*" PRIXPTR ", not in heap\n", 
-				file, line, (int)sizeof(uintptr_t)*2, (uintptr_t)ptr);
+		fprintf(stderr, "MEMORY BUG: %s:%ld: invalid free of pointer 0x%" PRIxPTR ", not in heap\n", 
+				file, line, (uintptr_t)ptr);
 		// fprintf(stderr, "\t%s: %ld: 0x%.*" PRIXPTR "is ")
 		exit(1);
 
+	} else if (HEAD(ptr).freed) {
+		fprintf(stderr, "MEMORY BUG: %s:%ld: invalid free of pointer 0x%" PRIxPTR ", double free\n", 
+				file, line, (uintptr_t)ptr);
+		exit(1);
+	
+	} else if (HEAD(ptr).present != 0xdeadbeef) {
+		fprintf(stderr, "MEMORY BUG: %s:%ld: invalid free of pointer 0x%" PRIxPTR ", not allocated\n", 
+				file, line, (uintptr_t)ptr);
+		exit(1);
+	} else {
+		void *temp = last_allocd;
+		while(temp) {
+			if (temp == ptr) {
+				break;
+			}
+			temp = HEAD(temp).prev;
+		}
+		if (temp == NULL) {
+			fprintf(stderr, "MEMORY BUG: %s:%ld: invalid free of pointer 0x%" PRIxPTR ", not allocated\n", 
+					file, line, (uintptr_t)ptr);
+			exit(1);
+		}
 	}
 
+	if (UCANARY(ptr) != 0xdeadbeefdeadbeef || OCANARY(ptr) != 0xdeadbeefdeadbeef) {
+		fprintf(stderr, "MEMORY BUG: %s:%ld: detected wild write during free of pointer 0x%" PRIxPTR "\n", 
+				file, line, (uintptr_t)ptr);
+		exit(1);
+	}
 
-	// successful free results
-	size_t sz = ((Header *)ptr - 1)->sz;
-	
+	// update header
+	HEAD(ptr).freed = true;
+
+	// update ll
+
+	// update overall data 
 	nactive -= 1;
-	active_size -= sz;
+	active_size -= HEAD(ptr).sz;
 }
 
 

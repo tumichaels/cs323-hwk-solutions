@@ -1,3 +1,2 @@
-Bad pointer 0x22ebf48
-alloc count: active          0   total          1   fail          0
-alloc size:  active       2001   total       2001   fail          0
+Bad pointer 0x1702f60
+MEMORY BUG: test022.cc:10: invalid free of pointer 0x1702f60, not allocated

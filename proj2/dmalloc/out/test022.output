@@ -1,2 +1,0 @@
-Bad pointer 0x1702f60
-MEMORY BUG: test022.cc:10: invalid free of pointer 0x1702f60, not allocated

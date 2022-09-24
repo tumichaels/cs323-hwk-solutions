@@ -1,2 +1,0 @@
-Will free 0x1e10ee0
-MEMORY BUG: test020.cc:11: invalid free of pointer 0x1e10ee0, double free

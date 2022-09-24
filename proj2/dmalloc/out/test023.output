@@ -1,2 +1,0 @@
-Bad pointer 0x1b8bf5f
-MEMORY BUG: test023.cc:10: invalid free of pointer 0x1b8bf5f, not allocated

@@ -1,2 +1,0 @@
-Bad pointer 0x15fff60
-MEMORY BUG: test021.cc:10: invalid free of pointer 0x15fff60, not allocated

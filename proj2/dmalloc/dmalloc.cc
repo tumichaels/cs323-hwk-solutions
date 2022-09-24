@@ -15,6 +15,7 @@
 #define OCANARY(ptr) (*((unsigned long long *)((uintptr_t)ptr + HEAD(ptr).sz)))
 
 #define CANARY_SIZE sizeof(unsigned long long)
+#define CANARY_VAL 0xdeadbeefdeadbeef // on 32 bit, it's trimmed to deadbeef
 
 typedef struct header {
 	// basic stats
@@ -24,6 +25,7 @@ typedef struct header {
 
 	// alloc ll
 	void *prev;
+	void *self;
 	void *next;
 
 	// free protections
@@ -31,7 +33,7 @@ typedef struct header {
 	unsigned int present;
 } Header;
 
-void *last_allocd = 0x0;
+void *last_active = 0x0;
 
 unsigned long long nactive = 0;				// number of active allocations [#malloc - #free]
 unsigned long long active_size = 0;			// number of bytes in active allocations
@@ -73,7 +75,8 @@ void* dmalloc_malloc(size_t sz, const char* file, long line) {
 	h->sz = sz;
 	h->file = file;
 	h->line = line;
-	h->prev = last_allocd;
+	h->prev = last_active;
+	h->self = NULL;
 	h->next = NULL;
 	h->freed = false;
 	h->present = 0xdeadbeef;
@@ -81,16 +84,17 @@ void* dmalloc_malloc(size_t sz, const char* file, long line) {
 	// start of returned block
 	out = (void *)((uintptr_t)out + sizeof(Header) + CANARY_SIZE);
 
-	// update ll
+	// update ll and last_active
 	if (h->prev)
 		HEAD(h->prev).next = out;
+	h->self = out;
+	last_active = out;
 
 	// set canaries
-	UCANARY(out) = 0xdeadbeefdeadbeef;
-	OCANARY(out) = 0xdeadbeefdeadbeef;
+	UCANARY(out) = CANARY_VAL;
+	OCANARY(out) = CANARY_VAL;
 
 	// update stats
-	last_allocd = out;
 	nactive += 1;
 	active_size += sz;
 	ntotal += 1;
@@ -124,45 +128,53 @@ void dmalloc_free(void* ptr, const char* file, long line) {
 
 	// valid ptr checks
 	if ((uintptr_t)ptr < heap_min || (uintptr_t)ptr > heap_max) {
-		fprintf(stderr, "MEMORY BUG: %s:%ld: invalid free of pointer 0x%" PRIxPTR ", not in heap\n", 
-				file, line, (uintptr_t)ptr);
-		// fprintf(stderr, "\t%s: %ld: 0x%.*" PRIXPTR "is ")
+		fprintf(stdout, "MEMORY BUG: %s:%ld: invalid free of pointer %p, not in heap\n", 
+				file, line, ptr);
+		// additional error message about outside of heap free 
 		exit(1);
 
 	} else if (HEAD(ptr).freed) {
-		fprintf(stderr, "MEMORY BUG: %s:%ld: invalid free of pointer 0x%" PRIxPTR ", double free\n", 
-				file, line, (uintptr_t)ptr);
+		fprintf(stdout, "MEMORY BUG: %s:%ld: invalid free of pointer %p, double free\n", 
+				file, line, ptr);
 		exit(1);
 	
-	} else if (HEAD(ptr).present != 0xdeadbeef) {
-		fprintf(stderr, "MEMORY BUG: %s:%ld: invalid free of pointer 0x%" PRIxPTR ", not allocated\n", 
-				file, line, (uintptr_t)ptr);
-		exit(1);
-	} else {
-		void *temp = last_allocd;
-		while(temp) {
-			if (temp == ptr) {
-				break;
+	} else if (HEAD(ptr).present != 0xdeadbeef || HEAD(ptr).self != ptr) {
+		fprintf(stdout, "MEMORY BUG: %s:%ld: invalid free of pointer %p, not allocated\n", 
+				file, line, ptr);
+
+		void *temp = last_active;
+		assert(temp);
+		while (temp){
+			if ((uintptr_t)temp < (uintptr_t)ptr && (uintptr_t)ptr < (uintptr_t)temp + HEAD(temp).sz) {
+				fprintf(stdout, "  %s:%ld: %p is %zu bytes inside a %zu byte region allocated here", 
+						HEAD(temp).file, HEAD(temp).line, ptr, (uintptr_t)ptr - (uintptr_t)temp, HEAD(temp).sz);
+				exit(1);
 			}
 			temp = HEAD(temp).prev;
 		}
-		if (temp == NULL) {
-			fprintf(stderr, "MEMORY BUG: %s:%ld: invalid free of pointer 0x%" PRIxPTR ", not allocated\n", 
-					file, line, (uintptr_t)ptr);
-			exit(1);
-		}
-	}
-
-	if (UCANARY(ptr) != 0xdeadbeefdeadbeef || OCANARY(ptr) != 0xdeadbeefdeadbeef) {
-		fprintf(stderr, "MEMORY BUG: %s:%ld: detected wild write during free of pointer 0x%" PRIxPTR "\n", 
-				file, line, (uintptr_t)ptr);
+		fprintf(stdout, "%s:%ld: %p is outside of any allocated block\n", 
+				file, line, ptr); 
 		exit(1);
 	}
 
-	// update header
-	HEAD(ptr).freed = true;
+	if (UCANARY(ptr) != CANARY_VAL || OCANARY(ptr) != CANARY_VAL) {
+		fprintf(stdout, "MEMORY BUG: %s:%ld: detected wild write during free of pointer %p\n", 
+				file, line, ptr);
+		exit(1);
+	}
 
-	// update ll
+	// update ll and last active
+	if (HEAD(ptr).prev) 
+		HEAD(HEAD(ptr).prev).next = HEAD(ptr).next;
+	if (HEAD(ptr).next) 
+		HEAD(HEAD(ptr).next).prev = HEAD(ptr).prev;
+	if (ptr == last_active) {
+		assert(HEAD(ptr).next == NULL);
+		last_active = HEAD(ptr).prev;
+	}
+
+	// modify the header
+	HEAD(ptr).freed = true;
 
 	// update overall data 
 	nactive -= 1;
@@ -230,6 +242,12 @@ void dmalloc_print_statistics() {
 
 void dmalloc_print_leak_report() {
     // Your code here.
+	void *temp = last_active;
+	while(temp) {
+		fprintf(stdout, "LEAK CHECK: %s:%ld: allocated object %p with size %zu\n", 
+				HEAD(temp).file, HEAD(temp).line, temp, HEAD(temp).sz);
+		temp = HEAD(temp).prev;
+	}
 }
 
 

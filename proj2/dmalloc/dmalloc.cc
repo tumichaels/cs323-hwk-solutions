@@ -16,7 +16,8 @@
 #define OCANARY(ptr) (*((size_t *)((uintptr_t)ptr + HEAD(ptr).sz)))
 
 #define CANARY_SIZE sizeof(size_t)
-#define CANARY_VAL 0xdeadbeefdeadbeef // on 32 bit, it's trimmed to deadbeef
+#define CANARY_VAL 0xdeadbeefdeadbeef 
+#define PRESENT_VAL 0xbeadbabebeadbabe
 
 typedef struct header {
 	// basic stats
@@ -31,7 +32,7 @@ typedef struct header {
 
 	// free protections
 	bool freed;
-	unsigned int present;
+	size_t present;
 } Header;
 
 void *last_active = 0x0;
@@ -59,7 +60,7 @@ void* dmalloc_malloc(size_t sz, const char* file, long line) {
 
 	// src stack overflow: https://tinyurl.com/43kkycew
 	size_t malloc_size;
-	if (__builtin_add_overflow(sz, sizeof(Header)+OFFSET + 2*CANARY_SIZE, &malloc_size)){
+	if (__builtin_add_overflow(sz, sizeof(Header)+ OFFSET + 2*CANARY_SIZE, &malloc_size)){
 		out = NULL;
 	} else {
 		out = base_malloc(malloc_size);
@@ -80,7 +81,7 @@ void* dmalloc_malloc(size_t sz, const char* file, long line) {
 	h->self = NULL;
 	h->next = NULL;
 	h->freed = false;
-	h->present = 0xdeadbeef;
+	h->present = PRESENT_VAL;
 
 	// start of returned block
 	out = (void *)((uintptr_t)out + sizeof(Header) + OFFSET + CANARY_SIZE);
@@ -139,7 +140,7 @@ void dmalloc_free(void* ptr, const char* file, long line) {
 				file, line, ptr);
 		exit(1);
 	
-	} else if (HEAD(ptr).present != 0xdeadbeef || HEAD(ptr).self != ptr) {
+	} else if (HEAD(ptr).present != PRESENT_VAL|| HEAD(ptr).self != ptr) {
 		fprintf(stdout, "MEMORY BUG: %s:%ld: invalid free of pointer %p, not allocated\n", 
 				file, line, ptr);
 
@@ -180,6 +181,8 @@ void dmalloc_free(void* ptr, const char* file, long line) {
 	// update overall data 
 	nactive -= 1;
 	active_size -= HEAD(ptr).sz;
+
+	base_free(&HEAD(ptr));
 }
 
 
@@ -257,4 +260,67 @@ void dmalloc_print_leak_report() {
 
 void dmalloc_print_heavy_hitter_report() {
     // Your heavy-hitters code here
+	
+	Header loc_lst[5];
+	memset(loc_lst, 0, sizeof(Header)*5);
+
+	size_t sub_count = 0;
+
+	void *block = last_active;
+	while (block) {
+		Header loc = HEAD(block);
+
+		size_t loc_lst_min = loc_lst[0].sz;
+		int i;
+		for (i=0; i<5; i++) {
+			if (loc_lst[i].sz < loc_lst_min)
+				loc_lst_min = loc_lst[i].sz;
+			if (loc_lst[i].file == NULL) {
+				loc_lst[i] = loc;
+				break;
+			} else if (loc_lst[i].file == loc.file && loc_lst[i].line == loc.line) {
+				loc_lst[i].sz += loc.sz; // no overflow bc its not actually likely
+				break;
+			}
+		}
+
+		if (i == 5) {
+			sub_count += loc_lst_min;
+			for (int j = 0; j<5; j++) {
+				// negative or 0
+				if (__builtin_sub_overflow(loc_lst[j].sz, loc_lst_min, &(loc_lst[j].sz))) {
+					memset(&(loc_lst[j]), 0, sizeof(Header));
+					i = j; // this is a free spot
+				}	
+			}
+
+			if (__builtin_sub_overflow(loc.sz, loc_lst_min, &(loc_lst[i].sz))) {
+				loc_lst[i].sz = 0;
+			} else {
+				loc_lst[i] = loc;
+				loc_lst[i].sz -= loc_lst_min;
+			}
+		}
+
+		block = HEAD(block).prev;
+	}
+
+	for (int i = 4; i>=0; i--){
+		for(int j = 0; j<i; j++) {
+			if (loc_lst[j].sz < loc_lst[j+1].sz) {
+				// swap
+				Header temp = loc_lst[j];
+				loc_lst[j] = loc_lst[j+1];
+				loc_lst[j+1] = temp;
+			}
+		}
+	}
+
+	for (int i=0; i<5; i++) {
+		if ((float)(loc_lst[i].sz)/active_size < 0.2) {
+			break;
+		}
+		printf("HEAVY HITTER: %s:%ld: %zu (~%.2f%%)\n",
+			   loc_lst[i].file, loc_lst[i].line, loc_lst[i].sz, (float)(loc_lst[i].sz)/active_size * 100);
+	}
 }

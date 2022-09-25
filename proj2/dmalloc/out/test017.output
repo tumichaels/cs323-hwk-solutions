@@ -1,0 +1,1 @@
+MEMORY BUG: test017.cc:9: invalid free of pointer 0x1493fd0, not in heap

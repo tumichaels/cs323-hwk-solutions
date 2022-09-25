@@ -46,6 +46,62 @@ unsigned long long fail_size = 0;			// number of bytes in failed allocation atte
 uintptr_t heap_min = 0;						// smallest address in any region ever allocated
 uintptr_t heap_max = 0;						// largest address in any region ever allocated
 
+#define HH_FACTOR 10						// heavy hitters take >= 1/HH_FACTOR of memory
+bool hh_not_init = true;					// have we initialized the heavy hitters list?
+Header hh_lst[HH_FACTOR];					// list of "heavy hitters"
+size_t bytes_removed;						// how many bytes did we remove while updating heavy hitters
+
+/// hh_add(ptr)
+///   given an allocd pointer, add it to the heavy hitter list
+
+void hh_add(void *ptr) {
+	if (hh_not_init) {
+		for (int i = 0; i<HH_FACTOR; i++) {
+			hh_lst[i].file = NULL;
+		}
+		hh_not_init = false;
+	}
+
+	Header loc = HEAD(ptr);
+	size_t hh_min = loc.sz;
+
+	int i;
+	for (i = 0; i< HH_FACTOR; i++) {
+		if (hh_min > hh_lst[i].sz)
+			hh_min = hh_lst[i].sz;
+
+		if (hh_lst[i].file == NULL){
+			hh_lst[i] = loc;
+			break;
+		} else if (hh_lst[i].file == loc.file && hh_lst[i].line == loc.line) {
+			hh_lst[i].sz += loc.sz;
+			break;
+		}
+	}
+
+	if (i != HH_FACTOR) // could add loc to hh_lst 
+		return;
+
+	bytes_removed += hh_min;
+	for (int j = 0; j< HH_FACTOR; j++) {
+		hh_lst[j].sz -= hh_min;
+		if (hh_lst[j].sz == 0){
+			hh_lst[j].file = NULL;
+			i = j;
+		}
+	}
+
+	if (i == HH_FACTOR) // all nonzero, so loc was smallest
+		return;
+
+	hh_lst[i] = loc; // add loc to hh_lst in free pos closest to end
+	hh_lst[i].sz -= hh_min;
+}
+
+/// END OF HELPERS
+
+
+
 /// dmalloc_malloc(sz, file, line)
 ///    Return a pointer to `sz` bytes of newly-allocated dynamic memory.
 ///    The memory is not initialized. If `sz == 0`, then dmalloc_malloc must
@@ -110,6 +166,8 @@ void* dmalloc_malloc(size_t sz, const char* file, long line) {
 	} else if ((uintptr_t) out + sz > heap_max) {
 		heap_max = (uintptr_t) out + sz;
 	}
+
+	hh_add(out);
 
     return out; 
 }
@@ -213,8 +271,6 @@ void* dmalloc_calloc(size_t nmemb, size_t sz, const char* file, long line) {
 ///    Store the current memory statistics in `*stats`.
 
 void dmalloc_get_statistics(dmalloc_statistics* stats) {
-    // Stub: set all statistics to enormous numbers
-    memset(stats, 255, sizeof(dmalloc_statistics));
 	stats->nactive = nactive;
 	stats->active_size = active_size;
 	stats->ntotal = ntotal;
@@ -261,66 +317,25 @@ void dmalloc_print_leak_report() {
 void dmalloc_print_heavy_hitter_report() {
     // Your heavy-hitters code here
 	
-	Header loc_lst[5];
-	memset(loc_lst, 0, sizeof(Header)*5);
-
-	size_t sub_count = 0;
-
-	void *block = last_active;
-	while (block) {
-		Header loc = HEAD(block);
-
-		size_t loc_lst_min = loc_lst[0].sz;
-		int i;
-		for (i=0; i<5; i++) {
-			if (loc_lst[i].sz < loc_lst_min)
-				loc_lst_min = loc_lst[i].sz;
-			if (loc_lst[i].file == NULL) {
-				loc_lst[i] = loc;
-				break;
-			} else if (loc_lst[i].file == loc.file && loc_lst[i].line == loc.line) {
-				loc_lst[i].sz += loc.sz; // no overflow bc its not actually likely
-				break;
+	// sort hh_lst
+	for (int i = HH_FACTOR - 1; i>=0; i--){
+		for (int j=0; j<i; j++) {
+			if (hh_lst[j].sz < hh_lst[j+1].sz) {
+				Header temp = hh_lst[j];
+				hh_lst[j] = hh_lst[j+1];
+				hh_lst[j+1] = temp;
 			}
-		}
-
-		if (i == 5) {
-			sub_count += loc_lst_min;
-			for (int j = 0; j<5; j++) {
-				// negative or 0
-				if (__builtin_sub_overflow(loc_lst[j].sz, loc_lst_min, &(loc_lst[j].sz))) {
-					memset(&(loc_lst[j]), 0, sizeof(Header));
-					i = j; // this is a free spot
-				}	
-			}
-
-			if (__builtin_sub_overflow(loc.sz, loc_lst_min, &(loc_lst[i].sz))) {
-				loc_lst[i].sz = 0;
-			} else {
-				loc_lst[i] = loc;
-				loc_lst[i].sz -= loc_lst_min;
-			}
-		}
-
-		block = HEAD(block).prev;
+		}	
 	}
 
-	for (int i = 4; i>=0; i--){
-		for(int j = 0; j<i; j++) {
-			if (loc_lst[j].sz < loc_lst[j+1].sz) {
-				// swap
-				Header temp = loc_lst[j];
-				loc_lst[j] = loc_lst[j+1];
-				loc_lst[j+1] = temp;
-			}
-		}
-	}
-
-	for (int i=0; i<5; i++) {
-		if ((float)(loc_lst[i].sz)/active_size < 0.2) {
-			break;
-		}
-		printf("HEAVY HITTER: %s:%ld: %zu (~%.2f%%)\n",
-			   loc_lst[i].file, loc_lst[i].line, loc_lst[i].sz, (float)(loc_lst[i].sz)/active_size * 100);
+	// print hh_lst
+	for (int i =0; i<HH_FACTOR; i++) {
+		if (hh_lst[i].file == NULL)
+			return;
+		else if ((hh_lst[i].sz + bytes_removed) * HH_FACTOR <= total_size)
+			return;
+		hh_lst[i].sz += bytes_removed;
+		fprintf(stdout, "HEAVY HITTER: %s:%ld: %zu bytes (~%.2f%%)\n",
+				hh_lst[i].file, hh_lst[i].line, hh_lst[i].sz, hh_lst[i].sz/(float)total_size * 100);
 	}
 }

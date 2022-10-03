@@ -198,7 +198,7 @@ Node* CreateFunctionCall(Node* functionDecl, NodeList* args);
  type: EXPRESSION
  stmtCode: S_NONE
  exprCode: VARIABLE
- opCode: O_NOONE
+ opCode: O_NONE
  name: Name of the variable
  left: Either an assignment node or a function parameter node referred by this
        variable.
@@ -278,7 +278,7 @@ void FreeProgram(NodeList* list);
 void FreeFunctionDecl(Node* node);
 // Frees a list of nodes representing parameters (in a function declaration).
 void FreeParameters(NodeList* node);
-// Frees aa node representing a parameter.
+// Frees a node representing a parameter.
 void FreeParameter(Node* node);
 // Recursively frees nodes representing a list of statements.
 void FreeStatements(NodeList* nodelist);

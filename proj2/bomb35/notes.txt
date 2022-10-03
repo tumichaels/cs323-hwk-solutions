@@ -1,0 +1,85 @@
+phase 1 at ln: 331
+view memory: x + address
+
+read six numbers -- check first
+    puts 6 numbers just outside the stack pointer
+    
+PHASE 5
+1. stackframe size 28
+2. push 2 relative addresses to stack
+3. push 1 abs address to stack (format specifier for scanf)
+    %d %d %d %d %d %d
+4. push 1 relative address to stack
+5. use input scan function
+    modifies eax!
+6. send stack pointer back
+7. compare eax to 1
+
+tl;dr you need 2 numbers -- first must be  < 7 and controls a jump to a position in memory 
+
+second is check
+
+PHASE 6
+2 numeric inputs, second input is 2, 3, or 4
+i think the first one was 54*second
+
+PHASE 7
+compare something with the word 'bruins'
+but you are rewriting your input 
+repeatedly so there are shenanigans
+
+input stored at ebx location from second push: line 8049777
+
+804b250 is a random list of chars
+
+need ascii chars where hex rep has following 2nd digit:
+
+0xd - b
+0x6 - r
+0x3 - u
+0x4 - i
+0x8 - n
+0x7 - s
+
+
+PHASE 8
+
+a bunch of loops of some kind
+
+outputs from read six numbers at line 0x80497ea
+stored at
+0x38(%esp), 0x3c(%esp), etc...
+
+at line 0x80497f3 the mem locations of outputs
+is moved to %ebp and things are done to it
+
+at line 8049839 an address just after the inputs
+is placed in edx. The first input can be found at
+-0x18(%edx)
+or in
+(%edi)
+
+all numbers distinct and 1-6
+then they switch it to (7-each number)
+then they build a linked list out of it
+
+0x804e174
+
+PHASE 9
+
+input must be <= 1005
+
+func 9 input pointer points to 0x804e0c0
+    this is something tricky!!!
+
+in func 9 at line 0x80498d8
+    input pointer stored at 0x10(%esp) --> $edx
+    input val stored at 0x14(%esp) --> $ecx
+
+    in the fn, edx is the pointer return
+               ecx is the original input value
+
+
+
+
+

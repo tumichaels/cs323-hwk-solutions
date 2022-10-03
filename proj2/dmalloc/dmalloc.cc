@@ -47,7 +47,7 @@ uintptr_t heap_min = 0;						// smallest address in any region ever allocated
 uintptr_t heap_max = 0;						// largest address in any region ever allocated
 
 #define HH_FACTOR 10						// heavy hitters take >= 1/HH_FACTOR of memory
-bool hh_not_init = true;					// have we initialized the heavy hitters list?
+bool hh_init = false;						// have we initialized the heavy hitters list?
 Header hh_lst[HH_FACTOR];					// list of "heavy hitters"
 size_t bytes_removed;						// how many bytes did we remove while updating heavy hitters
 
@@ -55,11 +55,9 @@ size_t bytes_removed;						// how many bytes did we remove while updating heavy 
 ///   given an allocd pointer, add it to the heavy hitter list
 
 void hh_add(void *ptr) {
-	if (hh_not_init) {
-		for (int i = 0; i<HH_FACTOR; i++) {
-			hh_lst[i].file = NULL;
-		}
-		hh_not_init = false;
+	if (!hh_init) {
+		memset(hh_lst, 0, sizeof(hh_lst));
+		hh_init = true;
 	}
 
 	Header loc = HEAD(ptr);
@@ -72,21 +70,21 @@ void hh_add(void *ptr) {
 
 		if (hh_lst[i].file == NULL){
 			hh_lst[i] = loc;
-			break;
+			return;
 		} else if (hh_lst[i].file == loc.file && hh_lst[i].line == loc.line) {
 			hh_lst[i].sz += loc.sz;
-			break;
+			return;
 		}
 	}
 
-	if (i != HH_FACTOR) // could add loc to hh_lst 
-		return;
-
+	assert(i==HH_FACTOR); // if you make it all the way through the loop
+	
 	bytes_removed += hh_min;
 	for (int j = 0; j< HH_FACTOR; j++) {
 		hh_lst[j].sz -= hh_min;
 		if (hh_lst[j].sz == 0){
 			hh_lst[j].file = NULL;
+			hh_lst[j].sz = 0;
 			i = j;
 		}
 	}

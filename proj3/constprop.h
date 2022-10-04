@@ -39,3 +39,6 @@ bool ConstProp(NodeList* funcdecls);
   ADD DECLARATIONS OF ANY FUNCTIONS YOU ADD BELOW THIS LINE
 *******************************************************************************************
 */
+
+void funcCallProp(Node *);
+void numOpProp(Node *);

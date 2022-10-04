@@ -6,6 +6,7 @@
 #define __Node_H__
 
 #include<stdbool.h>
+#include <assert.h>
 
 typedef enum _NodeType {
   N_NONE,

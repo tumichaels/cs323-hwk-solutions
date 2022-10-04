@@ -114,7 +114,7 @@ void ConstFoldPerFunction(Node* funcNode) {
  		 *************************************************************************************
  		 TODO: YOUR CODE HERE
  
- 		 // assume: this is a function and statements 
+ 		 // assume: everything you check is defined, ie stmtNodeRight isn't null and expr aren't Null 
 		 //
 		 // check things about the statements:
 		 //		if stmtNodeRight != NULL, do somthing		
@@ -123,10 +123,7 @@ void ConstFoldPerFunction(Node* funcNode) {
 		 **************************************************************************************
 		 */ 
 
-		if (!stmtNodeRight) {
-			statements = statements->next;
-			continue;	
-		} else if (stmtNodeRight->type != EXPRESSION) {
+		if (stmtNodeRight->type != EXPRESSION) {
 			statements = statements->next;
 			continue;
 		} else if (stmtNodeRight->opCode == FUNCTIONCALL) { // don't think O_NONE check is necessary
@@ -142,10 +139,7 @@ void ConstFoldPerFunction(Node* funcNode) {
 		if (exprLeft->exprCode != CONSTANT) {
 			statements = statements->next;
 			continue;
-
-		// the next comparison only works because we use calloc and O_NONE has a literal value of 0
-		// from how enums work. This code should be changed.
-		} else if (exprRight->exprCode != O_NONE || exprRight->exprCode != CONSTANT) {
+		} else if (stmtNodeRight->opCode != NEGATE && exprRight->exprCode != CONSTANT) { // change first part to func prob
 			statements = statements->next;
 			continue;
 		}
@@ -179,6 +173,7 @@ bool ConstantFolding(NodeList* list) {
 	/*
 	 *************************************************************************************
 	 TODO: YOUR CODE HERE
+	 i might be missing a check about function declarations
 	 **************************************************************************************
 	 */
 		ConstFoldPerFunction(list->node);
@@ -191,4 +186,4 @@ bool ConstantFolding(NodeList* list) {
  ****************************************************************************************************************************
  END OF CONSTANT FOLDING
  *****************************************************************************************************************************
- */                
+ */ 

@@ -123,10 +123,16 @@ void ConstFoldPerFunction(Node* funcNode) {
 		 **************************************************************************************
 		 */ 
 
-		if (stmtNodeRight->type != EXPRESSION) {
+		if (stmtNodeRight == NULL) {// not all statments have a right
 			statements = statements->next;
 			continue;
-		} else if (stmtNodeRight->opCode == FUNCTIONCALL) { // don't think O_NONE check is necessary
+		} else if (stmtNodeRight->type != EXPRESSION) {
+			statements = statements->next;
+			continue;
+		} else if (stmtNodeRight->opCode == O_NONE) { // check not const or var
+			statements = statements->next;
+			continue;
+		} else if (stmtNodeRight->opCode == FUNCTIONCALL) { 
 			statements = statements->next;
 			continue;
 		}

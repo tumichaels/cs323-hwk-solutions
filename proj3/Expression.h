@@ -180,7 +180,7 @@ Node* CreateUnaryOperation(OpType opcode, Node* expr);
  type: EXPRESSION
  stmtCode: S_NONE
  exprCode: OPERATION
- opCode: FUNCTIONCAALL
+ opCode: FUNCTIONCALL
  left: The node to the function declaration
  arguments: the list of arguments, ordered from left to right
  

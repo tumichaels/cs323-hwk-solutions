@@ -454,8 +454,16 @@ void Codegen(NodeList* worklist) {
       /*
        ****************************************
               TODO : YOUR CODE HERE
+
+	relevant questions: where are variables
+	stored? inside or outside of the func?
+
+	how much space must be added to the 
+	stack? (Activation Record)
        ****************************************
       */
+	InitAsm(worklist->node->name);
+	
         worklist = worklist->next; 
     }
     fclose(fptr);

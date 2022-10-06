@@ -89,11 +89,11 @@ void TrackConst(NodeList* statements) {
 		node = statements->node;
 		/*
 		 ****************************************
-TODO : YOUR CODE HERE
-
-goes through the list of statments,
-first tries to replace, then tries to add
-to the const list
+		 TODO : YOUR CODE HERE
+		 
+		 goes through the list of statments,
+		 first tries to replace, then tries to add
+		 to the const list
 
 		 ****************************************
 		 */
@@ -113,11 +113,10 @@ to the const list
 					madeChange = true;
 				}
 			}
-		} else {
+		} else if (node->stmtCode == ASSIGN){ //make it easier to read
 
-			// at this point, it must be an assign
 			Node *rAssign = node->right;
-			if (rAssign->exprCode == FUNCTIONCALL) {
+			if (rAssign->opCode == FUNCTIONCALL) {
 				funcCallProp(rAssign);
 			} else if (rAssign->exprCode == OPERATION) {
 				numOpProp(rAssign);
@@ -179,7 +178,7 @@ void numOpProp(Node *expr){
 		}
 	}
 
-	if(expr->exprCode == NEGATE) {
+	if(expr->opCode == NEGATE) {
 		return;
 	}
 
@@ -208,6 +207,7 @@ bool ConstProp(NodeList* worklist) {
 		TrackConst(worklist->node->statements);	
 
 		worklist = worklist->next;
+		FreeConstList();
 	}
 	return madeChange;
 }

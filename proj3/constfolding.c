@@ -153,9 +153,9 @@ void ConstFoldPerFunction(Node* funcNode) {
 		long result = CalcExprValue(stmtNodeRight);
 		FreeExpression(stmtNodeRight);
 		statements->node->right = CreateNumber(result);
-		statements = statements->next;
-
 		madeChange = true;
+
+		statements = statements->next;
 	}
 }
 

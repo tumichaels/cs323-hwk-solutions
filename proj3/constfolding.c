@@ -95,7 +95,44 @@ long ConstFoldPerStatement(Node* stmtNodeRight){
 	 **************************************************************************************
 	 */                                                                                                         
 
-	return CalcExprValue(stmtNodeRight);
+	long result;
+	Node *leftNode, *rightNode;
+	leftNode = stmtNodeRight->left;
+	rightNode = stmtNodeRight->right; 
+	switch(stmtNodeRight->opCode){
+		case MULTIPLY:
+			result = leftNode->value * rightNode->value;
+			break;
+		case DIVIDE:
+			result = leftNode->value / rightNode->value;
+			break;
+		case ADD:
+			result = leftNode->value + rightNode->value;
+			break;
+		case SUBTRACT:
+			result = leftNode->value - rightNode->value;
+			break;
+		case NEGATE:
+			result = -leftNode->value;
+			break;
+		case BOR:
+			result = leftNode->value | rightNode->value;
+			break;
+		case BAND:
+			result = leftNode->value & rightNode->value;
+			break;
+		case BXOR:
+			result = leftNode->value ^ rightNode->value;
+			break;
+		case BSHR:
+			result = leftNode->value >> rightNode->value;
+			break;
+		case BSHL:
+			result = leftNode->value << rightNode->value;
+		default:
+			break;
+	}
+	return result;
 }
 
 
@@ -150,7 +187,7 @@ void ConstFoldPerFunction(Node* funcNode) {
 			continue;
 		}
 
-		long result = CalcExprValue(stmtNodeRight);
+		long result = ConstFoldPerStatement(stmtNodeRight);
 		FreeExpression(stmtNodeRight);
 		statements->node->right = CreateNumber(result);
 		madeChange = true;

@@ -349,14 +349,32 @@ void CreateRegList() {
     // Create the initial reglist which can be used to store variables.
     // 4 general purpose registers : AX, BX, CX, DX
     // 4 special purpose : SP, BP, SI , DI. 
-    // Other registers: r8, r9
+    // Other registers: r8 -> r15
     // You need to decide which registers you will add in the register list 
     // use. Can you use all of the above registers?
     /*
      ****************************************
               TODO : YOUR CODE HERE
+	 
+	 I think we can actually use rbp but i'm
+	 not sure so i'm just going to ignore it 
+	 for now
      ***************************************
     */
+	
+	AddRegInfo("%%rax", true);
+	AddRegInfo("%%rbx", true);
+	AddRegInfo("%%rcx", true);
+	AddRegInfo("%%rdx", true);
+	AddRegInfo("%%r8", true);
+	AddRegInfo("%%r9", true);
+	AddRegInfo("%%r10", true);
+	AddRegInfo("%%r11", true);
+	AddRegInfo("%%r12", true);
+	AddRegInfo("%%r13", true);
+	AddRegInfo("%%r14", true);
+	AddRegInfo("%%r15", true);
+
 }
 
 
@@ -372,16 +390,32 @@ int PushArgOnStack(NodeList* arguments) {
               TODO : YOUR CODE HERE
      ****************************************
     */
+	char *argRegs[6] = {"%%rdi", "%%rsi", "%%rdx", "%%rcx", "%%r8", "%%r9"};
+	int numArgs = -1;
     while(arguments!=NULL) {
     /*
      ***********************************************************************
               TODO : YOUR CODE HERE
       THINK ABOUT WHERE EACH ARGUMENT COMES FROM. EXAMPLE WHERE IS THE 
       FIRST ARGUMENT OF A FUNCTION STORED.
+
+	  this is for when you want to call a function inside another function,
+	  you first the values of these registers
+
+	  talked to Alex Yuan, i'm just going to push all six register values to
+	  the stack, they're filled in order: %rdi, %rsi, %rdx, %rcx, %r8, %r9
+
+	  so you should push them in order: %r9, %r8, %rcx, %rdx, %rsi, %rdi
      ************************************************************************
-     */ 
-        arguments = arguments->next;
+     */
+		numArgs++;
     }
+
+	while (numArgs >= 0) {
+		fprintf(fptr, "push %s", argRegs[numArgs]);
+		numArgs--;
+	}
+	
     return argCounter;
 }
 
@@ -458,8 +492,21 @@ void Codegen(NodeList* worklist) {
 	relevant questions: where are variables
 	stored? inside or outside of the func?
 
+	variables are stored inside the function
+
 	how much space must be added to the 
 	stack? (Activation Record)
+
+	not how this works, you just track
+	stuff in rbp
+
+	for now we're not going to consider 
+	using the registers, everything
+	will be accessed from the stack
+
+	okay, so how do we figure out how to 
+	get stuff back? suppose have three 
+	variables, which we'll deal with later
        ****************************************
       */
 	InitAsm(worklist->node->name);
@@ -474,6 +521,10 @@ void Codegen(NodeList* worklist) {
  YOU CAN MAKE ADD AUXILLIARY FUNCTIONS BELOW THIS LINE. DO NOT FORGET TO DECLARE THEM IN THE HEADER
 **********************************************************************************************************************************
 */
+
+void processFuncCall(Node *node) {
+}
+
 
 /*
 **********************************************************************************************************************************

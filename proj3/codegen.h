@@ -88,3 +88,13 @@ void Codegen(NodeList* funcdecls);
   ADD DECLARATIONS OF ANY FUNCTIONS YOU ADD BELOW THIS LINE
 ************************************************************************
 */
+
+long InitializeRegVarList(Node *);
+void WriteFunctionCallAssign(Node *);
+void NegateAssign(Node *);
+void CommBinaryOpAssign(Node *, Node *, char *);
+void MultOpAssign(Node *, Node *);
+void NonCommBinaryOpAssign(Node *, Node *, char *);
+void DivOpAssign(Node *, Node *); // remember to deal with rdx
+void WriteArithmeticAssign(Node *);
+void WriteAssign(Node *);

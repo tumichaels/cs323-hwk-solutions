@@ -55,6 +55,7 @@ void LongToCharOffset() {
      strcat(lastOffsetUsed,"(%rbp)");
 }
 
+// this function is not very helpful
 /*
 ***************************************************************************
   FUNCTION TO CONVERT CONSTANT VALUE TO CHAR STRING
@@ -93,8 +94,6 @@ void SaveValInRax(char* name) {
     }
 }
 
-
-
 /*
 ***********************************************************************
   FUNCTION TO ADD VARIABLE INFORMATION TO THE VARIABLE INFO LIST
@@ -125,8 +124,7 @@ void AddVarInfo(char* varName, char* location, long val, bool isConst) {
   FUNCTION TO FREE THE VARIABLE INFORMATION LIST
 ************************************************************************
 */
-void FreeVarList()
-{  
+void FreeVarList() {  
    varStoreInfo* tmp;
    while (varHead != NULL)
     {  
@@ -232,8 +230,7 @@ void AddRegInfo(char* name, int avail) {
   FUNCTION TO FREE REGISTER INFORMATION LIST
 ************************************************************************
 */
-void FreeRegList()
-{  
+void FreeRegList() {  
    regInfo* tmp;
    while (regHead != NULL)
     {  
@@ -340,6 +337,8 @@ void PrintRegListInfo() {
     regList = regHead;
 }
 
+
+
 /*
 ***********************************************************************
   FUNCTION TO CREATE THE REGISTER LIST
@@ -362,22 +361,22 @@ void CreateRegList() {
      ***************************************
     */
 	
-	AddRegInfo("%%rax", true);
-	AddRegInfo("%%rbx", true);
-	AddRegInfo("%%rcx", true);
-	AddRegInfo("%%rdx", true);
-	AddRegInfo("%%r8", true);
-	AddRegInfo("%%r9", true);
-	AddRegInfo("%%r10", true);
-	AddRegInfo("%%r11", true);
-	AddRegInfo("%%r12", true);
-	AddRegInfo("%%r13", true);
-	AddRegInfo("%%r14", true);
-	AddRegInfo("%%r15", true);
+	AddRegInfo("%rax", true);
+	AddRegInfo("%rbx", true);
+	AddRegInfo("%rcx", true);
+	AddRegInfo("%rdx", true);
+	AddRegInfo("%rsi", true);
+	AddRegInfo("%rdi", true);
+	AddRegInfo("%r8", true);
+	AddRegInfo("%r9", true);
+	AddRegInfo("%r10", true);
+	AddRegInfo("%r11", true);
+	AddRegInfo("%r12", true);
+	AddRegInfo("%r13", true);
+	AddRegInfo("%r14", true);
+	AddRegInfo("%r15", true);
 
 }
-
-
 
 /*
 ***********************************************************************
@@ -391,6 +390,8 @@ int PushArgOnStack(NodeList* arguments) {
      ****************************************
     */
 	char *argRegs[6] = {"%%rdi", "%%rsi", "%%rdx", "%%rcx", "%%r8", "%%r9"};
+
+	argCounter = 0;
 	int numArgs = -1;
     while(arguments!=NULL) {
     /*
@@ -409,16 +410,16 @@ int PushArgOnStack(NodeList* arguments) {
      ************************************************************************
      */
 		numArgs++;
+		argCounter++;
     }
 
 	while (numArgs >= 0) {
-		fprintf(fptr, "push %s", argRegs[numArgs]);
+		fprintf(fptr, "\npush %s", argRegs[numArgs]);
 		numArgs--;
 	}
 	
     return argCounter;
 }
-
 
 /*
 *************************************************************************
@@ -437,7 +438,9 @@ void PopArgFromStack(NodeList* arguments) {
               TODO : YOUR CODE HERE
       THINK ABOUT WHERE EACH ARGUMENT COMES FROM. EXAMPLE WHERE IS THE
       FIRST ARGUMENT OF A FUNCTION STORED AND WHERE SHOULD IT BE EXTRACTED
-      FROM AND STORED TO..
+      FROM AND STORED TO.
+
+	  where should they be stored too?
      ************************************************************************
      */
         arguments = arguments->next;
@@ -489,28 +492,80 @@ void Codegen(NodeList* worklist) {
        ****************************************
               TODO : YOUR CODE HERE
 
-	relevant questions: where are variables
-	stored? inside or outside of the func?
-
-	variables are stored inside the function
-
-	how much space must be added to the 
-	stack? (Activation Record)
-
-	not how this works, you just track
-	stuff in rbp
-
-	for now we're not going to consider 
-	using the registers, everything
-	will be accessed from the stack
-
-	okay, so how do we figure out how to 
-	get stuff back? suppose have three 
-	variables, which we'll deal with later
+	   relevant questions: where are variables
+	   stored? inside or outside of the func?
+	   
+	   variables are stored inside the function
+	   
+	   how much space must be added to the 
+	   stack? (Activation Record)
+	   
+	   not how this works, you just track
+	   stuff in rbp
+	   
+	   for now we're not going to consider 
+	   using the registers, everything
+	   will be accessed from the stack
+	   
+	   okay, so how do we figure out how to 
+	   get stuff back? suppose have three 
+	   variables, which we'll deal with later
        ****************************************
       */
-	InitAsm(worklist->node->name);
-	
+		Node *funcDecl = worklist->node;
+		lastUsedOffset = 0;
+		CreateRegList();
+		long maxOffset = 8*InitializeRegVarList(funcDecl);
+
+		// initialize %rbp, so vars are stored relative to rbp 
+		InitAsm(funcDecl->name);
+
+		// push callee saved registers to stack (if necessary)
+		// we exlucde rbp from callee saved bc we did that already in initAsm
+		//
+		// do you just always push these all?
+		char *calleeSaved[5] = {"%rbx", "%r12", "%r13", "%r14", "%r15"};
+		for (int i = 0; i<5; i++) {
+			fprintf(fptr, "\npush %s", calleeSaved[i]);
+			UpdateRegInfo(calleeSaved[i], true);
+
+		}
+
+		// decrement rsp
+		fprintf(fptr, "\nsubq $%ld, %%rsp", maxOffset);
+
+		// deal with assign statements
+		NodeList *statements = funcDecl->statements;
+		Node *stmtNode = statements->node;
+		while (stmtNode->stmtCode != RETURN) {
+			
+			// note that everything is some kind of assign
+			WriteAssign(stmtNode);
+
+			statements = statements->next;
+			stmtNode = statements->node;
+		}
+
+		// place return value in rax
+		if (stmtNode->left->exprCode == CONSTANT) {
+			fprintf(fptr, "\nmovq $%ld, %%rax", stmtNode->left->value);
+		}
+		else {
+			char *src = LookUpVarInfo(stmtNode->left->name, INVAL);
+			fprintf(fptr, "\nmovq %s, %%rax", src);
+		}
+		
+		// restore rsp
+		fprintf(fptr, "\naddq $%ld, %%rsp", maxOffset);
+
+		// restore callee-saved values
+		for (int i = 4; i >= 0; i--) {
+			fprintf(fptr, "\npop %s", calleeSaved[i]);
+		}
+
+		fprintf(fptr, "\nmovq %%rbp, %%rsp");
+		RetAsm(); 
+		FreeRegList();
         worklist = worklist->next; 
     }
     fclose(fptr);
@@ -522,9 +577,249 @@ void Codegen(NodeList* worklist) {
 **********************************************************************************************************************************
 */
 
-void processFuncCall(Node *node) {
+/*
+ * NOTE TO SELF: I will never use the isConst parameter in add / update var, which means
+ * i will never use the val field in lookup
+ */
+
+long InitializeRegVarList(Node *funcNode) {
+	// Set reg status to unavailable and add to varlist
+	char *argRegs[6] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+	NodeList *arguments = funcNode->arguments;
+	long numVars = 0;
+	while (arguments != NULL) {
+		AddVarInfo(arguments->node->name, argRegs[numVars], INVAL, false);	
+		UpdateRegInfo(argRegs[numVars], false);
+		numVars++;
+		arguments = arguments->next;
+	}
+
+	NodeList *statements = funcNode->statements;
+	while (statements != NULL) {
+		if (statements->node->stmtCode == ASSIGN) {
+			numVars++;
+		}
+		statements = statements->next;
+	}
+
+	return numVars;
 }
 
+void WriteFunctionCallAssign(Node *assignNode) {
+	// save caller saved, 
+	char *callerSaved[9] = {"%rax", "%rcx", "%rdx", "%rsi", "%rdi", "%r8", "%r9", "%r10", "%r11"};
+	bool restoreReg[9] = {false, false, false, false, false, false, false, false, false};
+	for (int i = 0; i < 9; i++) {
+		if (!IsAvailReg(callerSaved[i])) {
+			fprintf(fptr, "\npush %s", callerSaved[i]);
+			UpdateRegInfo(callerSaved[i], true);
+			restoreReg[i] = true;
+		}
+	}
+	
+	// load args in regs
+	char *argRegs[6] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+	NodeList *arguments = assignNode->right->arguments;
+	int i = 0;
+	while (arguments != NULL) {
+		if (arguments->node->exprCode == VARIABLE) {	
+			char *src = LookUpVarInfo(arguments->node->name, INVAL);
+			fprintf(fptr, "\nmovq %s, %s", src, argRegs[i]);
+		}
+		else if (arguments->node->exprCode == CONSTANT) {
+			fprintf(fptr, "\nmovq $%ld, %s", arguments->node->value, argRegs[i]);
+		}
+
+		UpdateRegInfo(argRegs[i], false);
+		i++;
+		arguments = arguments->next;
+	}
+
+	// call to function
+	fprintf(fptr, "\ncall %s", assignNode->right->left->name);
+
+	// ensure caller-saved regs aren't available
+	for (int i = 0; i < 9; i++) {
+		UpdateRegInfo(callerSaved[i], false);
+	}
+
+	SaveValInRax(assignNode->name);
+
+	// replace caller saved registers
+	for (int i = 8; i >= 0; i--) {
+		if (restoreReg[i]) {
+			fprintf(fptr, "\npop %s", callerSaved[i]);
+		}
+	}
+}
+
+void NegateAssign(Node *exprLeft){
+	char *src = LookUpVarInfo(exprLeft->name, INVAL);
+	fprintf(fptr, "\nmovq %s, %%rax", src);
+	fprintf(fptr, "\nnegq %%rax");
+}
+
+void CommBinaryOpAssign(Node *exprLeft, Node *exprRight, char *asmCmd) {
+	if (exprLeft->exprCode == CONSTANT) {
+		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
+		fprintf(fptr, "\nmovq %s, %%rax", rsrc);
+		fprintf(fptr, "\n%s $%ld, %%rax", asmCmd, exprLeft->value);
+	}
+	else if (exprRight->exprCode == CONSTANT) {
+		char *lsrc = LookUpVarInfo(exprLeft->name, INVAL);
+		fprintf(fptr, "\nmovq %s, %%rax", lsrc);
+		fprintf(fptr, "\n%s $%ld, %%rax", asmCmd, exprRight->value);
+	}
+	else {
+		char *lsrc = LookUpVarInfo(exprLeft->name, INVAL);
+		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
+		fprintf(fptr, "\nmovq %s, %%rax", lsrc);
+		fprintf(fptr, "\n%s %s, %%rax", asmCmd, rsrc);
+	}
+}
+
+void MultOpAssign(Node *exprLeft, Node *exprRight) {
+	if (exprLeft->exprCode == CONSTANT) {
+		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
+		fprintf(fptr, "\nimulq $%ld, %s, %%rax", exprLeft->value, rsrc);
+	}
+	else if (exprRight->exprCode == CONSTANT) {
+		char *lsrc = LookUpVarInfo(exprLeft->name, INVAL);
+		fprintf(fptr, "\nimulq $%ld, %s, %%rax", exprRight->value, lsrc);
+	}
+	else {
+		char *lsrc = LookUpVarInfo(exprLeft->name, INVAL);
+		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
+		fprintf(fptr, "\nmovq %s, %%rax", lsrc);
+		fprintf(fptr, "\nimulq %s, %%rax", rsrc);
+	}
+}
+
+void NonCommBinaryOpAssign(Node *exprLeft, Node *exprRight, char *asmCmd) {
+	if (exprLeft->exprCode == CONSTANT) {
+		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
+		fprintf(fptr, "\nmovq $%ld, %%rax", exprLeft->value);
+		fprintf(fptr, "\n%s %s, %%rax", asmCmd, rsrc);
+	}
+	else if (exprRight->exprCode == CONSTANT) {
+		char *lsrc = LookUpVarInfo(exprLeft->name, INVAL);
+		fprintf(fptr, "\nmovq %s, %%rax", lsrc);
+		fprintf(fptr, "\n%s $%ld, %%rax", asmCmd, exprRight->value);
+	}
+	else {
+		char *lsrc = LookUpVarInfo(exprLeft->name, INVAL);
+		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
+		fprintf(fptr, "\nmovq %s, %%rax", lsrc);
+		fprintf(fptr, "\n%s %s, %%rax", asmCmd, rsrc);
+	}
+}
+
+void DivOpAssign(Node *exprLeft, Node *exprRight) {
+	bool pushRdx = !IsAvailReg("%rdx");
+	if (pushRdx) {
+		fprintf(fptr, "\npush %%rdx");
+	}
+	
+	if (exprLeft->exprCode == CONSTANT) {
+		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
+		fprintf(fptr, "\nmovq $%ld, %%rax", exprLeft->value);
+		fprintf(fptr, "\ncqto");
+		fprintf(fptr, "\nidivq %s", rsrc);
+	}
+	else if (exprRight->exprCode == CONSTANT) {
+		// idivq only takes reg or mem, so push divisor to mem
+		char *lsrc = LookUpVarInfo(exprLeft->name, INVAL);
+		fprintf(fptr, "\npush $%ld", exprRight->value);
+		fprintf(fptr, "\nmovq %s, %%rax", lsrc);
+		fprintf(fptr, "\ncqto");
+		fprintf(fptr, "\nidivq (%%rsp)");
+		fprintf(fptr, "\naddq $8, %%rsp");
+	}
+	else {
+		char *lsrc = LookUpVarInfo(exprLeft->name, INVAL);
+		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
+		fprintf(fptr, "\nmovq %s, %%rax", lsrc);
+		fprintf(fptr, "\ncqto");
+		fprintf(fptr, "\nidivq (%%rsp)");
+	}
+	
+	if (pushRdx) {
+		fprintf(fptr, "\npop %%rdx");
+	}
+}
+
+/*
+ *  We always write the output of the expression into rax
+ */
+void WriteArithmeticAssign(Node *assignNode) {
+	Node *stmtNodeRight = assignNode->right;
+	Node *exprLeft = stmtNodeRight->left;
+	Node *exprRight = stmtNodeRight->right;
+	switch (stmtNodeRight->opCode) {
+		case MULTIPLY:
+			MultOpAssign(exprLeft, exprRight);
+			break;
+		
+		case DIVIDE:
+			DivOpAssign(exprLeft, exprRight);
+			break;
+
+		case ADD:
+			CommBinaryOpAssign(exprLeft, exprRight, "addq");
+			break;
+
+		case SUBTRACT:
+			NonCommBinaryOpAssign(exprLeft, exprRight, "subq");
+			break;
+
+		case NEGATE:
+			NegateAssign(exprLeft);
+			break;
+		
+		case BOR:
+			CommBinaryOpAssign(exprLeft, exprRight, "orq");
+			break;
+
+		case BAND:
+			CommBinaryOpAssign(exprLeft, exprRight, "andq");
+			break;
+
+		case BXOR:
+			CommBinaryOpAssign(exprLeft, exprRight, "xorq");
+			break;
+
+		case BSHR:
+			NonCommBinaryOpAssign(exprLeft, exprRight, "shrq");
+			break;
+
+		case BSHL:
+			NonCommBinaryOpAssign(exprLeft, exprRight, "shlq");
+			break;
+	}
+	SaveValInRax(assignNode->name);	
+}
+
+/*
+ * assume that every input to writeAssign is an assign node
+ */
+void WriteAssign(Node *node) {
+	// only these cases bc of const prop	
+	if (node->right->exprCode == VARIABLE) {
+		char *src = LookUpVarInfo(node->right->name, INVAL);
+		fprintf(fptr, "\nmovq %s, %%rax", src);
+		SaveValInRax(node->name);
+	}
+	else if (node->right->exprCode == OPERATION) {
+		if (node->right->opCode == FUNCTIONCALL) {
+			// assign var to func call
+			WriteFunctionCallAssign(node);
+		}
+		else {
+			// assign var to arithmetic operation
+			WriteArithmeticAssign(node);
+		}
+	}
+}
 
 /*
 **********************************************************************************************************************************

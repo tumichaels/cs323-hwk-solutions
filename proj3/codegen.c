@@ -389,10 +389,6 @@ int PushArgOnStack(NodeList* arguments) {
               TODO : YOUR CODE HERE
      ****************************************
     */
-	char *argRegs[6] = {"%%rdi", "%%rsi", "%%rdx", "%%rcx", "%%r8", "%%r9"};
-
-	argCounter = 0;
-	int numArgs = -1;
     while(arguments!=NULL) {
     /*
      ***********************************************************************
@@ -400,24 +396,10 @@ int PushArgOnStack(NodeList* arguments) {
       THINK ABOUT WHERE EACH ARGUMENT COMES FROM. EXAMPLE WHERE IS THE 
       FIRST ARGUMENT OF A FUNCTION STORED.
 
-	  this is for when you want to call a function inside another function,
-	  you first the values of these registers
-
-	  talked to Alex Yuan, i'm just going to push all six register values to
-	  the stack, they're filled in order: %rdi, %rsi, %rdx, %rcx, %r8, %r9
-
-	  so you should push them in order: %r9, %r8, %rcx, %rdx, %rsi, %rdi
      ************************************************************************
      */
-		numArgs++;
-		argCounter++;
+		arguments = arguments->next;
     }
-
-	while (numArgs >= 0) {
-		fprintf(fptr, "\npush %s", argRegs[numArgs]);
-		numArgs--;
-	}
-	
     return argCounter;
 }
 

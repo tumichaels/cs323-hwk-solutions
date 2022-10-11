@@ -724,14 +724,24 @@ void DivOpAssign(Node *exprLeft, Node *exprRight) {
 		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
 		fprintf(fptr, "\nmovq $%ld, %%rax", exprLeft->value);
 		fprintf(fptr, "\ncqto");
-		fprintf(fptr, "\nidivq %s", rsrc);
+		if (!strcmp(rsrc, "%rdx")) {
+			// if dividing by %rdx, we pushed val to stack
+			// before it got clobbered by cqto
+			fprintf(fptr, "\nidivq (%%rsp)");
+		}
+		else {
+			// else we can just divide
+			fprintf(fptr, "\nidivq %s", rsrc);
+		}
 	}
 	else if (exprRight->exprCode == CONSTANT) {
-		// idivq only takes reg or mem, so push divisor to mem
 		char *lsrc = LookUpVarInfo(exprLeft->name, INVAL);
+		// idivq only takes reg or mem, so push divisor to mem
 		fprintf(fptr, "\npush $%ld", exprRight->value);
+		// move dividend to %rax	
 		fprintf(fptr, "\nmovq %s, %%rax", lsrc);
 		fprintf(fptr, "\ncqto");
+		// divide using %rsp to access pushed divisor
 		fprintf(fptr, "\nidivq (%%rsp)");
 		fprintf(fptr, "\naddq $8, %%rsp");
 	}
@@ -740,7 +750,12 @@ void DivOpAssign(Node *exprLeft, Node *exprRight) {
 		char *rsrc = LookUpVarInfo(exprRight->name, INVAL);
 		fprintf(fptr, "\nmovq %s, %%rax", lsrc);
 		fprintf(fptr, "\ncqto");
-		fprintf(fptr, "\nidivq (%%rsp)");
+		if (!strcmp(rsrc, "%rdx")) {
+			fprintf(fptr, "\nidivq (%%rsp)");
+		}
+		else {
+			fprintf(fptr, "\nidivq %s", rsrc);
+		}
 	}
 	
 	if (pushRdx) {

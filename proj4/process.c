@@ -40,6 +40,68 @@
 #include "parse.h"
 #include "process.h"
 
+void redirect(const CMD *cmdList) {
+	if (cmdList->fromType == RED_IN){
+		int new_stdin_fd = open(cmdList->fromFile, O_RDONLY);
+		if (new_stdin_fd == -1) {
+			int err = errno;
+			perror(cmdList->argv[0]);
+			exit(err);
+		}
+		close(STDIN_FILENO);
+		dup2(new_stdin_fd, STDIN_FILENO);
+		// closing the file to be safe, unnecessary?
+		close(new_stdin_fd); 
+	} 
+	else if (cmdList->fromType == RED_IN_HERE){
+		// in this case the input is in the buffer cmdList->fromFile
+		char fileName[7+6+1];
+		strcpy(fileName, "mytemp-XXXXXX");
+		int new_stdin_fd = mkstemp(fileName);
+
+		// write contents of cmdList->fromFile to tmp file
+		int len = strlen(cmdList->fromFile);
+		write(new_stdin_fd, cmdList->fromFile, len);
+		lseek(new_stdin_fd, 0L, SEEK_SET); // rewind to start of file
+
+		// do file descriptor magic
+		close(STDIN_FILENO);
+		dup2(new_stdin_fd, STDIN_FILENO);
+		close(new_stdin_fd);
+		unlink(fileName);
+	} 
+
+	if (cmdList->toType == RED_OUT) {
+		// mode could also just be set to 0744
+		int new_stdout_fd = open(cmdList->toFile, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU | S_IRGRP | S_IROTH);
+		if (new_stdout_fd == -1) {
+			int err = errno;
+			perror(cmdList->argv[0]);
+			exit(err);
+		}
+		close(STDOUT_FILENO);
+		dup2(new_stdout_fd, STDOUT_FILENO);
+		close(new_stdout_fd);
+	} 
+	else if (cmdList->toType == RED_OUT_APP) {
+		int new_stdout_fd = open(cmdList->toFile, O_CREAT | O_WRONLY | O_APPEND, S_IRWXU | S_IRGRP | S_IROTH);
+		if (new_stdout_fd == -1) {
+			int err = errno;
+			perror(cmdList->argv[0]);
+			exit(err);
+		}
+		close(STDOUT_FILENO);
+		dup2(new_stdout_fd, STDOUT_FILENO);
+		close(new_stdout_fd);
+	}
+
+	// don't need to support redir of standard error
+	// else if (cmdList->toType == RED_ERR) {
+	// }
+	// else if (cmdList->toType == RED_ERR_APP) {
+	// }
+}
+
 // TODO: cd, pushd, popd need to be done
 //	 note that my current error handling breaks these!
 // TODO: fix parent logic???
@@ -49,82 +111,18 @@ int process_simple(const CMD *cmdList){
 	
 	pid = fork();
 	if (pid == 0) {
-		if (cmdList->fromType == RED_IN){
-			int new_stdin_fd = open(cmdList->fromFile, O_RDONLY);
-			if (new_stdin_fd == -1) {
-				int err = errno;
-				perror(cmdList->argv[0]);
-				exit(err);
-			}
-			close(STDIN_FILENO);
-			dup2(new_stdin_fd, STDIN_FILENO);
-			// closing the file to be safe, unnecessary?
-			close(new_stdin_fd); 
-		} 
-		else if (cmdList->fromType == RED_IN_HERE){
-			// in this case the input is in the buffer cmdList->fromFile
-			char fileName[7+6+1];
-			strcpy(fileName, "mytemp-XXXXXX");
-			int new_stdin_fd = mkstemp(fileName);
-
-			// write contents of cmdList->fromFile to tmp file
-			int len = strlen(cmdList->fromFile);
-			write(new_stdin_fd, cmdList->fromFile, len);
-			lseek(new_stdin_fd, 0L, SEEK_SET); // rewind to start of file
-
-			// do file descriptor magic
-			close(STDIN_FILENO);
-			dup2(new_stdin_fd, STDIN_FILENO);
-			close(new_stdin_fd);
-			unlink(fileName);
-		} 
-
-		if (cmdList->toType == RED_OUT) {
-			// mode could also just be set to 0744
-			int new_stdout_fd = open(cmdList->toFile, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU | S_IRGRP | S_IROTH);
-			if (new_stdout_fd == -1) {
-				int err = errno;
-				perror(cmdList->argv[0]);
-				exit(err);
-			}
-			close(STDOUT_FILENO);
-			dup2(new_stdout_fd, STDOUT_FILENO);
-			close(new_stdout_fd);
-		} 
-		else if (cmdList->toType == RED_OUT_APP) {
-			int new_stdout_fd = open(cmdList->toFile, O_CREAT | O_WRONLY | O_APPEND, S_IRWXU | S_IRGRP | S_IROTH);
-			if (new_stdout_fd == -1) {
-				int err = errno;
-				perror(cmdList->argv[0]);
-				exit(err);
-			}
-			close(STDOUT_FILENO);
-			dup2(new_stdout_fd, STDOUT_FILENO);
-			close(new_stdout_fd);
-		}
-
-		// don't need to support redir of standard error
-		// else if (cmdList->toType == RED_ERR) {
-		// }
-		// else if (cmdList->toType == RED_ERR_APP) {
-		// }
-
-		// set local variables
-		for (int i = 0; i < cmdList->nLocal; i++) {
-			setenv(cmdList->locVar[i], cmdList->locVal[i], 1);
-		}
-
+		redirect(cmdList);
 		execvp(cmdList->argv[0], cmdList->argv);
 		int err = errno;
 		perror(cmdList->argv[0]);
 		exit(err);
 	}
 	else {
-		// update wait logic 
-		// you need the status of the kids somehow
+		// get status
 		waitpid(pid, &child_status, 0);
 		child_status = STATUS(child_status);
 
+		// set status
 		int length = snprintf(NULL, 0,"%d", child_status);
 		char stat[length + 1];
 		sprintf(stat, "%d", child_status);
@@ -196,9 +194,49 @@ int process_pipe(const CMD *cmdList) {
 	return f_status;
 }
 
-// not returning raw status value, but the complete one
+int process_subcmd(const CMD *cmdList) {
+	int pid;
+	int child_status = 0;
 
+	pid = fork();
+	if (pid == 0) {
+		redirect(cmdList);
+		int s = process(cmdList->left);
+		exit(s);
+	} 
+	else {
+		// get status
+		waitpid(pid, &child_status, 0);
+		child_status = STATUS(child_status);
+
+		// set status
+		int length = snprintf(NULL, 0,"%d", child_status);
+		char stat[length + 1];
+		sprintf(stat, "%d", child_status);
+		setenv("?", stat, 1); 
+	}
+	return child_status;
+}
+
+void assign_env(const CMD *cmdList) {
+	// set environment variables
+	for (int i = 0; i < cmdList->nLocal; i++) {
+		setenv(cmdList->locVar[i], cmdList->locVal[i], 1);
+	} 
+}
+
+void unassign_env(const CMD *cmdList) {
+	// unset environment variables
+	for (int i = 0; i < cmdList->nLocal; i++) {
+		unsetenv(cmdList->locVar[i]);
+	}
+}
+
+// not returning raw status value, only lower order bits
 int process(const CMD *cmdList) {
+
+	assign_env(cmdList);
+
 	int out = 0;
 	switch (cmdList->type) {
 
@@ -222,6 +260,10 @@ int process(const CMD *cmdList) {
 				out = process(cmdList->right);
 			break;
 
+		case SUBCMD:
+			out = process_subcmd(cmdList); // not using subnode!
+			break;
+
 		// this needs to be looked at
 		case SEP_END:
 			out = process(cmdList->left);
@@ -232,5 +274,8 @@ int process(const CMD *cmdList) {
 		default:
 			break;
 	}
+
+	unassign_env(cmdList);
+	
 	return out;
 }

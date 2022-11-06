@@ -1,0 +1,138 @@
+Public test script for Bash
+
+
+========== MAKING Bash
+
+***** Checking for warning messages *****
+Making ./Bash
+make: 'Bash' is up to date.
+Each test is either passed or failed; there is no partial credit.
+
+To execute the test labelled IJ, type the command:
+     /c/cs323/proj4/tests/tIJ
+The answer expected is in /c/cs323/proj4/tests/tIJ.t.
+
+
+========== RUNNING TESTS
+
+
+-------------- Local variables
+  1 point  /c/cs323/proj4/tests/t01  With simple command
+
+-------------- Redirect stdin to file (<)
+  1 point  /c/cs323/proj4/tests/t02  Redirect stdin to file
+
+-------------- Redirect stdin to HERE document (<<)
+  1 point  /c/cs323/proj4/tests/t03  No expansion in HERE document
+
+-------------- Redirect stdout to file (>, >>)
+  1 point  /c/cs323/proj4/tests/t04  Redirect stdout to nonexistent/writable file
+
+-------------- Redirect stdout to pipe (|)
+  1 point  /c/cs323/proj4/tests/t05  Simple pipe
+  1 point  /c/cs323/proj4/tests/t06  Very long pipeline using few descriptors
+
+-------------- Multiple commands per line
+  1 point  /c/cs323/proj4/tests/t07  Multiple commands separated by ;
+
+-------------- Background commands (&)
+[36m2,5c2,3[0m
+[31m< (2)$ alpha[0m
+[31m< (3)$ beta[0m
+[31m< (4)$ gamma[0m
+[31m< (5)$ End of test[0m
+[36m---[0m
+[32m> (2)$ (3)$ beta[0m
+[32m> (4)$ (5)$ End of test[0m
+[36m7,8d4[0m
+[31m< Backgrounded: XXXX[0m
+[31m< Completed: XXXX (0)[0m
+[34mError: STDOUT differs from expected[0m
+  0 point  /c/cs323/proj4/tests/t08  Simple background command
+
+-------------- && or ||
+[36m1,27c1[0m
+[31m< (1)$ C-BBN[0m
+[31m< C-Cottam[0m
+[31m< C-DEC[0m
+[31m< C-Delaware[0m
+[31m< C-ESA[0m
+[31m< C-GNU[0m
+[31m< C-IH[0m
+[31m< C-INGRES[0m
+[31m< C-Pike[0m
+[31m< C-Stanford[0m
+[31m< C-Ten[0m
+[31m< C-UTZOO[0m
+[31m< Other[0m
+[31m< (2)$ (3)$ (4)$ C-BBN[0m
+[31m< C-Cottam[0m
+[34mError: STDOUT differs from expected[0m
+  0 point  /c/cs323/proj4/tests/t09  Simple && and ||
+
+-------------- Grouped commands
+[36m1,14c1[0m
+[31m< (1)$ vvvvvvvv[0m
+[31m< Richard M. Stallman, Linus Thorvalds, and Donald E. Knuth[0m
+[31m< engage in a discussion on whose impact on the computerized[0m
+[31m< world was the greatest.[0m
+[31m< [0m
+[31m< Stallman: "God told me I have programmed the best editor in[0m
+[31m< the world!"[0m
+[31m< [0m
+[31m< Thorvalds: "Well, God told *me* that I have programmed the[0m
+[31m< best operating system in the world!"[0m
+[31m< [0m
+[31m< Knuth: "Wait, wait - I never said that."[0m
+[31m< ^^^^^^^^[0m
+[31m< (2)$ End of test[0m
+[36m---[0m
+[34mError: STDOUT differs from expected[0m
+  0 point  /c/cs323/proj4/tests/t10  Redirect stdin to group of simple commands
+
+-------------- cd
+[36m1,2c1,2[0m
+[31m< (1)$ (1)$ (2)$ /home/accts/sce/CPSC-323/Doc[0m
+[31m< (3)$ (3)$ (3)$ (4)$ /home/classes/cs323[0m
+[36m---[0m
+[32m> (1)$ (1)$ (2)$ /tmp/TEST.Bash.2593705[0m
+[32m> (3)$ (3)$ (3)$ (4)$ /tmp/TEST.Bash.2593705[0m
+[34mError: STDOUT differs from expected[0m
+  0 point  /c/cs323/proj4/tests/t11  cd directoryName AND cd
+[36m1c1[0m
+[31m< (1)$ (2)$ (3)$ /home/classes/cs323[0m
+[36m---[0m
+[32m> (1)$ (2)$ (3)$ /tmp/TEST.Bash.2593705[0m
+[36m7c7[0m
+[31m< (1)$ (2)$ (3)$ /home/classes/cs323[0m
+[36m---[0m
+[32m> (1)$ (2)$ (3)$ /tmp/TEST.Bash.2593705[0m
+[36m13c13[0m
+[31m< (1)$ (2)$ (3)$ /home/classes/cs323[0m
+[36m---[0m
+[32m> (1)$ (2)$ (3)$ /tmp/TEST.Bash.2593705[0m
+[34mError: STDOUT differs from expected[0m
+  0 point  /c/cs323/proj4/tests/t12  cd errors (ERROR)
+
+-------------- pushd/popd
+[36mpushd: No such file or directory[0m
+[36mpushd: No such file or directory[0m
+[36mpushd: No such file or directory[0m
+[34mError: STDERR should be empty)[0m
+[36m1,5c1,2[0m
+[31m< (1)$ /home/classes /[0m
+[31m< (2)$ /home/classes/cs323 /home/classes /[0m
+[31m< (3)$ /home/accts/cs323user/cs323/current/proj4 /home/classes/cs323 /home/classes /[0m
+[31m< (4)$ End of test[0m
+[31m< (5)$ [0m
+[36m---[0m
+[32m> (1)$ (2)$ (3)$ (4)$ End of test[0m
+[32m> (5)$ (4)$ (3)$ (2)$ [0m
+[34mError: STDOUT differs from expected[0m
+  0 point  /c/cs323/proj4/tests/t13  pushd directoryName
+
+-------------- Setting STATUS
+  1 point  /c/cs323/proj4/tests/t14  Simple cases of $?
+  1 point  /c/cs323/proj4/tests/t15  Pipe status 
+
+-------------- Errors

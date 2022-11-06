@@ -28,12 +28,20 @@
 //	this means I am first going to figure out simple shell commands
 //	then I will also need to figure out redirects
 
-
+// functions with errors to handle:
+//	chdir(), 
+//	execvp(),   +
+//	fork(), 
+//	open(),	    +
+//	pipe(), 
+//	getcwd(), 
+//	getwd()
 
 #include "parse.h"
 #include "process.h"
 
 // TODO: cd, pushd, popd need to be done
+//	 note that my current error handling breaks these!
 // TODO: fix parent logic???
 int process_simple(const CMD *cmdList){
 	pid_t pid;
@@ -43,6 +51,11 @@ int process_simple(const CMD *cmdList){
 	if (pid == 0) {
 		if (cmdList->fromType == RED_IN){
 			int new_stdin_fd = open(cmdList->fromFile, O_RDONLY);
+			if (new_stdin_fd == -1) {
+				int err = errno;
+				perror(cmdList->argv[0]);
+				exit(err);
+			}
 			close(STDIN_FILENO);
 			dup2(new_stdin_fd, STDIN_FILENO);
 			// closing the file to be safe, unnecessary?
@@ -69,12 +82,22 @@ int process_simple(const CMD *cmdList){
 		if (cmdList->toType == RED_OUT) {
 			// mode could also just be set to 0744
 			int new_stdout_fd = open(cmdList->toFile, O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU | S_IRGRP | S_IROTH);
+			if (new_stdout_fd == -1) {
+				int err = errno;
+				perror(cmdList->argv[0]);
+				exit(err);
+			}
 			close(STDOUT_FILENO);
 			dup2(new_stdout_fd, STDOUT_FILENO);
 			close(new_stdout_fd);
 		} 
 		else if (cmdList->toType == RED_OUT_APP) {
 			int new_stdout_fd = open(cmdList->toFile, O_CREAT | O_WRONLY | O_APPEND, S_IRWXU | S_IRGRP | S_IROTH);
+			if (new_stdout_fd == -1) {
+				int err = errno;
+				perror(cmdList->argv[0]);
+				exit(err);
+			}
 			close(STDOUT_FILENO);
 			dup2(new_stdout_fd, STDOUT_FILENO);
 			close(new_stdout_fd);
@@ -92,6 +115,9 @@ int process_simple(const CMD *cmdList){
 		}
 
 		execvp(cmdList->argv[0], cmdList->argv);
+		int err = errno;
+		perror(cmdList->argv[0]);
+		exit(err);
 	}
 	else {
 		// update wait logic 
@@ -103,14 +129,14 @@ int process_simple(const CMD *cmdList){
 		char stat[length + 1];
 		sprintf(stat, "%d", child_status);
 		setenv("?", stat, 1); 
-
 	}
 	return child_status;
 }
 
 int process_pipe(const CMD *cmdList) {
 	// the idea is essentially to create a pipe, then call fork
-	int p[2], leftpid, rightpid, l_status, r_status;
+	int p[2], leftpid, rightpid;
+	int f_status = 0;
 	pipe(p);
 
 	// for now, I'm assuming everything in a pipe is just a simple 
@@ -126,8 +152,8 @@ int process_pipe(const CMD *cmdList) {
 		close(p[0]);
 		close(p[1]);
 		
-		process(cmdList->left);
-		exit(0);
+		int s = process(cmdList->left);
+		exit(s);
 		// you need this exit call so things don't overlap from fork
 	}
 	else if ((rightpid = fork()) == 0) {
@@ -139,8 +165,8 @@ int process_pipe(const CMD *cmdList) {
 		close(p[0]);
 		close(p[1]);
 			
-		process(cmdList->right);
-		exit(0);
+		int s = process(cmdList->right);
+		exit(s);
 	}
 	else {
 		// parent of both left and right
@@ -148,12 +174,12 @@ int process_pipe(const CMD *cmdList) {
 		close(p[0]);
 		close(p[1]);
 
+		int l_status, r_status;
 		waitpid(leftpid, &l_status, 0);
 		l_status = STATUS(l_status);
 		waitpid(rightpid, &r_status, 0);
 		r_status = STATUS(r_status);
 
-		int f_status = 0;
 		if (l_status)
 			f_status = l_status;
 		if (r_status)
@@ -167,22 +193,44 @@ int process_pipe(const CMD *cmdList) {
 			setenv("?", "0", 1);
 	}
 
-	return 0;
+	return f_status;
 }
 
+// not returning raw status value, but the complete one
+
 int process(const CMD *cmdList) {
+	int out = 0;
 	switch (cmdList->type) {
 
 		case SIMPLE:
-			process_simple(cmdList);
+			out = process_simple(cmdList);
 			break;
 
 		case PIPE:
-			process_pipe(cmdList);
+			out = process_pipe(cmdList);
+			break;
+
+		case SEP_AND:
+			out = process(cmdList->left);
+			if (out == 0)
+				out = process(cmdList->right);
+			break;
+
+		case SEP_OR:
+			out = process(cmdList->left);
+			if (out != 0)
+				out = process(cmdList->right);
+			break;
+
+		// this needs to be looked at
+		case SEP_END:
+			out = process(cmdList->left);
+			if (cmdList->right)
+				out = process(cmdList->right);
 			break;
 
 		default:
 			break;
 	}
-	return 0;
+	return out;
 }

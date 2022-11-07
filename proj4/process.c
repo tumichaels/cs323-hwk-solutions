@@ -35,10 +35,72 @@
 //	open(),	    +
 //	pipe(), 
 //	getcwd(), 
-//	getwd()
 
 #include "parse.h"
 #include "process.h"
+
+// buildling a stack
+typedef struct node {
+	char *dir; // check on this
+	struct node *next;
+} Node;
+
+typedef Node **Stack;
+
+Stack dirs;
+
+Stack stack_create() {
+	Stack s = calloc(1, sizeof(Node *));
+	return s;
+}
+
+// no stack create because 
+// we made it a global
+void stack_destroy(Stack s) {
+	while (*s) {
+		Node *temp = (*s)->next;
+		free((*s)->dir);
+		free(*s);
+		*s = temp;
+	}
+}
+
+// pushes malloc string to stack
+void push(Stack s, char *newdir) {
+	Node *n = malloc(sizeof(Node));
+	n->dir = newdir;
+	n->next = *s;
+	*s = n;
+}
+
+// pops malloc string from stack
+// returns null on empty stack
+char *pop(Stack s) {
+	char *out = NULL;
+	if (*s) {
+		out = (*s)->dir;
+		Node *temp = (*s)->next;
+		free(*s);
+		*s = temp;
+	}
+	return out;
+}
+
+void print_stack(Stack s) {
+	Node *temp = *s;
+	while(temp) {
+		printf(" %s", temp->dir);
+		temp = temp->next;
+	}
+	printf("\n");
+}
+
+void set_status(int f_status) {
+	int length = snprintf(NULL, 0,"%d", f_status);
+	char stat[length + 1];
+	sprintf(stat, "%d", f_status);
+	setenv("?", stat, 1); 
+}
 
 void redirect(const CMD *cmdList) {
 	if (cmdList->fromType == RED_IN){
@@ -107,28 +169,98 @@ void redirect(const CMD *cmdList) {
 // TODO: fix parent logic???
 int process_simple(const CMD *cmdList){
 	pid_t pid;
-	int child_status;
-	
-	pid = fork();
-	if (pid == 0) {
-		redirect(cmdList);
-		execvp(cmdList->argv[0], cmdList->argv);
-		int err = errno;
-		perror(cmdList->argv[0]);
-		exit(err);
+	int f_status = 0;
+
+	int stdin_cpy = dup(STDIN_FILENO);
+	int stdout_cpy = dup(STDOUT_FILENO);
+	redirect(cmdList);
+
+	if (strcmp(cmdList->argv[0], "cd") == 0) {
+		if (cmdList->argc == 1 && chdir(getenv("HOME")) != 0) {
+			f_status = errno;
+			perror("cd: chdir() fail");
+		}
+		else if (cmdList->argc == 2 && chdir(cmdList->argv[1]) != 0) {
+			f_status = errno;
+			perror("cd: chdir() fail");
+		}
+		else if (cmdList->argc != 1 && cmdList->argc !=2){
+			f_status = 1;
+			fprintf(stderr, "%s", "usage: cd OR cd <dirName>\n");
+		}
+		
+		set_status(0);
+	}
+	else if (strcmp(cmdList->argv[0], "pushd") == 0) {
+		if (cmdList->argc != 2) {
+			f_status = 1;
+			fprintf(stderr, "usage: pushd <dirname>\n");
+		}
+		else {
+			if (dirs == NULL)
+				dirs = stack_create();
+			push(dirs, getcwd(NULL, 0));
+
+			if (chdir(cmdList->argv[1])) {
+				f_status = errno;
+				perror("pushd: chdir() fail");
+				pop(dirs);
+			}
+			else {
+				char *temp = getcwd(NULL, 0);
+				printf("%s", temp);
+				print_stack(dirs);
+				free(temp);
+			}
+		}
+
+		set_status(f_status);
+	}
+	else if (strcmp(cmdList->argv[0], "popd") == 0) {
+		if (cmdList->argc != 1) {
+			f_status = 1;
+			fprintf(stderr, "usage: popd\n");
+		}	
+		else {
+			char *dest = pop(dirs);
+			if (dest == NULL) {
+				f_status = 1;
+				fprintf(stderr, "popd: dir stack empty\n");
+			}
+			else if (chdir(dest)){
+				f_status = errno;
+				perror("popd: chdir() fail");
+			}
+			else {
+				printf("%s", dest);
+				print_stack(dirs);
+			}
+		}
 	}
 	else {
-		// get status
-		waitpid(pid, &child_status, 0);
-		child_status = STATUS(child_status);
+		pid = fork();
+		if (pid == 0) {
+			execvp(cmdList->argv[0], cmdList->argv);
+			int err = errno;
+			perror(cmdList->argv[0]);
+			exit(err);
+		}
+		else {
+			// get status
+			waitpid(pid, &f_status, 0);
+			f_status = STATUS(f_status);
 
-		// set status
-		int length = snprintf(NULL, 0,"%d", child_status);
-		char stat[length + 1];
-		sprintf(stat, "%d", child_status);
-		setenv("?", stat, 1); 
+			set_status(f_status);
+		}
 	}
-	return child_status;
+
+	// reset stdin and stdout (if builtin were redirected)
+	dup2(stdin_cpy, STDIN_FILENO);
+	dup2(stdout_cpy, STDOUT_FILENO);
+	close(stdin_cpy);
+	close(stdout_cpy);
+
+	return f_status;
 }
 
 int process_pipe(const CMD *cmdList) {
@@ -182,13 +314,8 @@ int process_pipe(const CMD *cmdList) {
 			f_status = l_status;
 		if (r_status)
 			f_status = r_status;
-		if (f_status) {
-			int length = snprintf(NULL, 0,"%d", f_status);
-			char stat[length + 1];
-			sprintf(stat, "%d", f_status);
-			setenv("?", stat, 1); 
-		} else 
-			setenv("?", "0", 1);
+		
+		set_status(f_status);
 	}
 
 	return f_status;
@@ -209,11 +336,7 @@ int process_subcmd(const CMD *cmdList) {
 		waitpid(pid, &child_status, 0);
 		child_status = STATUS(child_status);
 
-		// set status
-		int length = snprintf(NULL, 0,"%d", child_status);
-		char stat[length + 1];
-		sprintf(stat, "%d", child_status);
-		setenv("?", stat, 1); 
+		set_status(child_status);
 	}
 	return child_status;
 }
@@ -238,41 +361,33 @@ int process(const CMD *cmdList) {
 	assign_env(cmdList);
 
 	int out = 0;
-	switch (cmdList->type) {
-
-		case SIMPLE:
-			out = process_simple(cmdList);
-			break;
-
-		case PIPE:
-			out = process_pipe(cmdList);
-			break;
-
-		case SEP_AND:
-			out = process(cmdList->left);
-			if (out == 0)
-				out = process(cmdList->right);
-			break;
-
-		case SEP_OR:
-			out = process(cmdList->left);
-			if (out != 0)
-				out = process(cmdList->right);
-			break;
-
-		case SUBCMD:
-			out = process_subcmd(cmdList); // not using subnode!
-			break;
-
-		// this needs to be looked at
-		case SEP_END:
-			out = process(cmdList->left);
-			if (cmdList->right)
-				out = process(cmdList->right);
-			break;
-
-		default:
-			break;
+	if (cmdList->type == SIMPLE) {
+		out = process_simple(cmdList);
+	}
+	else if (cmdList->type == PIPE) {
+		out = process_pipe(cmdList);
+	}
+	else if (cmdList->type == SEP_AND) { 
+		out = process(cmdList->left);
+		if (out == 0)
+			out = process(cmdList->right);
+	}
+	else if (cmdList->type == SEP_OR) { 
+		out = process(cmdList->left);
+		if (out != 0)
+			out = process(cmdList->right);
+	}
+	else if (cmdList->type == SUBCMD) { 
+		out = process_subcmd(cmdList);
+	} 
+	else if (cmdList->type == SEP_BG) {
+		// TODO: DO THIS ONE ALREADY
+		// and take a look at the next one again
+	}
+	else if (cmdList->type == SEP_END) {
+		out = process(cmdList->left);
+		if (cmdList->right)
+			out = process(cmdList->right);
 	}
 
 	unassign_env(cmdList);

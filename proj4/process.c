@@ -85,7 +85,7 @@ void print_stack(Stack s) {
 	printf("\n");
 }
 
-int num_bg;
+int num_bg; // number of backgrounded processes
 
 void set_status(int f_status) {
 	int length = snprintf(NULL, 0,"%d", f_status);
@@ -270,11 +270,13 @@ int process_simple(const CMD *cmdList){
 			exit(err);
 		} 
 		else {
+			signal(SIGINT, SIG_IGN);
 			// get status
 			waitpid(pid, &f_status, 0);
 			f_status = STATUS(f_status);
 
 			set_status(f_status);
+			signal(SIGINT, SIG_DFL);
 		}
 	}
 
@@ -338,6 +340,8 @@ int process_pipe(const CMD *cmdList) {
 		close(p[0]);
 		close(p[1]);
 
+		signal(SIGINT, SIG_IGN);
+
 		int l_status, r_status;
 		waitpid(leftpid, &l_status, 0);
 		l_status = STATUS(l_status);
@@ -350,6 +354,7 @@ int process_pipe(const CMD *cmdList) {
 			f_status = r_status;
 		
 		set_status(f_status);
+		signal(SIGINT, SIG_DFL);
 	}
 
 	return f_status;
@@ -371,11 +376,13 @@ int process_subcmd(const CMD *cmdList) {
 		exit(s);
 	} 
 	else {
+		signal(SIGINT, SIG_IGN);
 		// get status
 		waitpid(pid, &f_status, 0);
 		f_status = STATUS(f_status);
 
-		set_status(f_status);
+		set_status(f_status);	
+		signal(SIGINT, SIG_DFL);
 	}
 	return f_status;
 }
@@ -391,13 +398,13 @@ int process_bg(const CMD *cmdList) {
 		perror("fork");
 		return err;
 	}
-	else if (pid == 0) {
+	num_bg++;
+	if (pid == 0) {
 		int s = process(cmdList);
 		exit(s);
 	} 
 	else {
 		WARN("Backgrounded: %d\n", pid);
-		num_bg++;
 	}
 
 	return 0;
@@ -418,20 +425,22 @@ void unassign_env(const CMD *cmdList) {
 }
 
 void reap_bg() {
+	int num_reaped = 0;
 	int child_status = 0;
-
+	// WARN("PID: %d ----- Background Processes: %d\n", getpid(), num_bg);
 	for (int i = 0; i < num_bg; i++) {
 		int s = waitpid(-1, &child_status, WNOHANG);
 		if (s > 0) { // reaped a process
+			//WARN("Reaped by: %d ----- ", getpid());
 			WARN("Completed: %d (%d)\n", s, child_status);
-			num_bg -= 1;
+			num_reaped++;
 		}
 	}
+	num_bg -= num_reaped;
 }
 
 // not returning raw status value, only lower order bits
 int process(const CMD *cmdList) {
-	reap_bg();
 
 	assign_env(cmdList);
 
@@ -456,9 +465,15 @@ int process(const CMD *cmdList) {
 		out = process_subcmd(cmdList);
 	} 
 	else if (cmdList->type == SEP_BG) {
-		// TODO: DO THIS ONE ALREADY
-		// and take a look at the next one again
-		process_bg(cmdList->left);
+		if (cmdList->left->type == SEP_END) {
+			out = process(cmdList->left->left);
+			if (cmdList->left->right) {
+				out = process_bg(cmdList->left->right);
+			}
+		}
+		else 
+			out = process_bg(cmdList->left);
+
 		if (cmdList->right)
 			out = process(cmdList->right);
 	}
@@ -469,6 +484,8 @@ int process(const CMD *cmdList) {
 	}
 
 	unassign_env(cmdList);
+
+	reap_bg();
 	
 	return out;
 }

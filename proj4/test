@@ -1,1 +1,2 @@
-boom!
+cd /c/cs323 | ls
+echo end of test

@@ -1,2 +1,4 @@
-cd /c/cs323 | ls
-echo end of test
+popd > temp.txt
+cat temp.txt	
+cat temp.txt >> temp.txt
+printenv ?

@@ -238,6 +238,9 @@ int process_simple(const CMD *cmdList){
 			WARN("%s", "usage: popd\n");
 		}	
 		else {
+			if (dirs == NULL)
+				dirs = stack_create();
+
 			char *dest = pop(dirs);
 			if (dest == NULL) {
 				f_status = 1;

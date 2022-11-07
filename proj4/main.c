@@ -37,7 +37,7 @@ int main()
 	freeList (list);                        // Free token list
 	if (cmd == NULL)
 	    continue;
-	else if (!getenv ("DUMP_TREE")) {        // Dump command tree if
+	else if (getenv ("DUMP_TREE")) {        // Dump command tree if
 	    dumpTree (cmd, 0);                  //   environment variable set
 	    printf ("\n");
 	    fflush (stdout);

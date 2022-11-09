@@ -1,4 +1,6 @@
+pushd /
+cd
+pushd cs323
+pushd proj4
 popd > temp.txt
-cat temp.txt	
-cat temp.txt >> temp.txt
-printenv ?
+cat temp.txt

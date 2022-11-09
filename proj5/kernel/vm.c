@@ -117,19 +117,22 @@ int virtual_memory_map(x86_64_pagetable* pagetable, uintptr_t va,
     for (; sz != 0; va += PAGESIZE, pa += PAGESIZE, sz -= PAGESIZE) {
         int cur_index123 = (va >> (PAGEOFFBITS + PAGEINDEXBITS));
         if (cur_index123 != last_index123) {
-            // TODO
+            // TODO --> done
             // find pointer to last level pagetable for current va
-
-
+			l1pagetable = lookup_l1pagetable(pagetable, va, perm);
 
             last_index123 = cur_index123;
         }
         if ((perm & PTE_P) && l1pagetable) { // if page is marked present
-            // TODO
+            // TODO --> done
             // map `pa` at appropriate entry with permissions `perm`
+			l1pagetable.entry[L1PAGEINDEX(va)] = pa | perm;
+
         } else if (l1pagetable) { // if page is NOT marked present
-            // TODO
+            // TODO --> done
             // map to address 0 with `perm`
+			l1pagetable.entry[L1PAGEINDEX(va)] = NULL | perm;
+
         } else if (perm & PTE_P) {
             // error, no allocated l1 page found for va
             log_printf("[Kern Info] failed to find l1pagetable address at " __FILE__ ": %d\n", __LINE__);
@@ -156,10 +159,10 @@ static x86_64_pagetable* lookup_l1pagetable(x86_64_pagetable* pagetable,
     // 4. return the pagetable address
 
     for (int i = 0; i <= 2; ++i) {
-        // TODO
+        // TODO --> done
         // find page entry by finding `ith` level index of va to index pagetable entries of `pt`
         // you should read x86-64.h to understand relevant structs and macros to make this part easier
-        x86_64_pageentry_t pe = PAGEINDEX(va, i); // replace this --> done
+        x86_64_pageentry_t pe = pagetable->entry[PAGEINDEX(va, 4-i)]; // replace this --> done
 
         if (!(pe & PTE_P)) { // address of next level should be present AND PTE_P should be set, error otherwise
             log_printf("[Kern Info] Error looking up l1pagetable: Pagetable address: 0x%x perm: 0x%x."
@@ -181,9 +184,9 @@ static x86_64_pagetable* lookup_l1pagetable(x86_64_pagetable* pagetable,
             assert(pe & PTE_U);   //   entry must allow PTE_U
         }
 
-        // TODO
+        // TODO --> done
         // set pt to physical address to next pagetable using `pe`
-        pt = PTE_ADDR(pe); // replace this --> done
+        pt = (x86_pagetable *)PTE_ADDR(pe); // replace this --> done
     }
     return pt;
 }

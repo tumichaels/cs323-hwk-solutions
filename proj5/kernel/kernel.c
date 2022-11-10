@@ -87,9 +87,9 @@ void kernel(const char* command) {
     console_clear();
     timer_init(HZ);
 
-    // using virtual memory map to make kernel memory non-user-accessible 
-	virtual_memory_map(kernel_pagetable, (uintptr_t) 0, (uintptr_t) 0,
-					   PROC_START_ADDR, PTE_P | PTE_W);
+    // use virtual_memory_map to remove user permissions for kernel memory
+    virtual_memory_map(kernel_pagetable, (uintptr_t) 0, (uintptr_t) 0,
+		       PROC_START_ADDR, PTE_P | PTE_W);
 
     // Set up process descriptors
     memset(processes, 0, sizeof(processes));

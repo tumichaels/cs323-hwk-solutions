@@ -44,7 +44,9 @@ static inline void sys_yield(void) {
 //    write to it. `Addr` must be page-aligned (i.e., a multiple of
 //    PAGESIZE == 4096). Returns 0 on success and -1 on failure.
 static inline int sys_page_alloc(void* addr) {
-    int result;
+    int result = 0;
+    if ((int) addr < PROC_START_ADDR)
+	    return -1;
     asm volatile ("int %1" : "=a" (result)
                   : "i" (INT_SYS_PAGE_ALLOC), "D" /* %rdi */ (addr)
                   : "cc", "memory");

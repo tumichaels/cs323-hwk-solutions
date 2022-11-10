@@ -126,12 +126,12 @@ int virtual_memory_map(x86_64_pagetable* pagetable, uintptr_t va,
         if ((perm & PTE_P) && l1pagetable) { // if page is marked present
             // TODO --> done
             // map `pa` at appropriate entry with permissions `perm`
-			l1pagetable.entry[L1PAGEINDEX(va)] = pa | perm;
+			l1pagetable->entry[L1PAGEINDEX(va)] = 0x0000FFFF & pa | perm;
 
         } else if (l1pagetable) { // if page is NOT marked present
             // TODO --> done
             // map to address 0 with `perm`
-			l1pagetable.entry[L1PAGEINDEX(va)] = NULL | perm;
+			l1pagetable->entry[L1PAGEINDEX(va)] = 0x0000FFFF & 0 | perm;
 
         } else if (perm & PTE_P) {
             // error, no allocated l1 page found for va
@@ -162,7 +162,7 @@ static x86_64_pagetable* lookup_l1pagetable(x86_64_pagetable* pagetable,
         // TODO --> done
         // find page entry by finding `ith` level index of va to index pagetable entries of `pt`
         // you should read x86-64.h to understand relevant structs and macros to make this part easier
-        x86_64_pageentry_t pe = pagetable->entry[PAGEINDEX(va, 4-i)]; // replace this --> done
+        x86_64_pageentry_t pe = pt->entry[PAGEINDEX(va, i)]; // replace this --> done
 
         if (!(pe & PTE_P)) { // address of next level should be present AND PTE_P should be set, error otherwise
             log_printf("[Kern Info] Error looking up l1pagetable: Pagetable address: 0x%x perm: 0x%x."
@@ -186,7 +186,7 @@ static x86_64_pagetable* lookup_l1pagetable(x86_64_pagetable* pagetable,
 
         // TODO --> done
         // set pt to physical address to next pagetable using `pe`
-        pt = (x86_pagetable *)PTE_ADDR(pe); // replace this --> done
+        pt = (x86_64_pagetable *)PTE_ADDR(pe); // replace this --> done
     }
     return pt;
 }

@@ -129,6 +129,55 @@ void kernel(const char* command) {
 }
 
 
+// next_free_page(uintptr_t *)
+//    loads uintptr_t * with the address of the next free page
+//    returns 0 on success, -1 on failure
+
+int next_free_page(uintptr_t *fill) {
+	for (uintptr_t pa = 0; pa += PAGESIZE; pa < PROC_START_ADDR) {
+		if (pageinfo[PAGENUMBER(pa)].owner == PO_FREE && // i'm confused by owner now
+		    pageinfo[PAGENUMBER(pa)].refcount == 0) {
+			*fill = pa;
+		    return 0;
+		}
+	}
+	return -1;
+}
+
+// pagetable_setup(pid)
+//    given a process, sets up pagetable in the kernel space
+
+void pagetable_setup(pid_t pid) {
+    uintptr_t pagetable_pages[5];
+
+    for (int i = 0; i< 5; i++) {
+		if (next_free_page(&pagetable_pages[i]) == 0) {
+			pageinfo[PAGENUMBER(pagetable_pages[i])].owner = pid;
+			pageinfo[PAGENUMBER(pagetable_pages[i])].refcount = 1;
+			memset((void *) pagetable_pages[i], 0, PAGESIZE);
+		}
+    }
+
+    ((x86_64_pagetable *) pagetable_pages[0])->entry[0] =
+        (x86_64_pageentry_t) pagetable_pages[1] | PTE_P | PTE_W | PTE_U;
+    
+    ((x86_64_pagetable *) pagetable_pages[1])->entry[0] =
+        (x86_64_pageentry_t) pagetable_pages[2] | PTE_P | PTE_W | PTE_U;
+
+    ((x86_64_pagetable *) pagetable_pages[2])->entry[0] =
+        (x86_64_pageentry_t) pagetable_pages[3] | PTE_P | PTE_W | PTE_U;
+
+    ((x86_64_pagetable *) pagetable_pages[2])->entry[1] =
+        (x86_64_pageentry_t) pagetable_pages[4] | PTE_P | PTE_W | PTE_U;
+
+    processes[pid].p_pagetable = (x86_64_pagetable *) pagetable_pages[0];
+
+   
+    memcpy((void *)pagetable_pages[3], &kernel_pagetable[3], 
+	   sizeof(x86_64_pageentry_t)*PAGENUMBER(PROC_START_ADDR));
+}
+
+
 // process_setup(pid, program_number)
 //    Load application program `program_number` as process number `pid`.
 //    This loads the application's code and data into memory, sets its
@@ -136,8 +185,10 @@ void kernel(const char* command) {
 
 void process_setup(pid_t pid, int program_number) {
     process_init(&processes[pid], 0);
-    processes[pid].p_pagetable = kernel_pagetable;
-    ++pageinfo[PAGENUMBER(kernel_pagetable)].refcount; //increase refcount since kernel_pagetable was used
+    //processes[pid].p_pagetable = kernel_pagetable;
+    //++pageinfo[PAGENUMBER(kernel_pagetable)].refcount; //increase refcount since kernel_pagetable was used
+
+    pagetable_setup(pid);
 
     int r = program_load(&processes[pid], program_number, NULL);
     assert(r >= 0);
@@ -268,8 +319,6 @@ void exception(x86_64_registers* reg) {
 
     case INT_SYS_PAGE_ALLOC: {
         uintptr_t addr = current->p_registers.reg_rdi;
-		// changes the owner of addr to the given process,
-		// i'm still unsure what the security risk is?
         int r = assign_physical_page(addr, current->p_pid); 
         if (r >= 0) {
             virtual_memory_map(current->p_pagetable, addr, addr,

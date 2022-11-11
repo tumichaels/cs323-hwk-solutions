@@ -14,7 +14,7 @@
 // |     | Kernel      Kernel |       :    I/O | App 1        App 1 | App 2
 // |     | Code + Data  Stack |  ...  : Memory | Code + Data  Stack | Code ...
 // +-----+--------------------+----------------+--------------------+---------/
-// 0  0x40000              0x80000 0xA0000 0x100000             0x140000
+// 0  0x040000            0x080000 0x0A0000 0x100000             0x140000
 //                                             ^
 //                                             | \___ PROC_SIZE ___/
 //                                      PROC_START_ADDR
@@ -89,7 +89,16 @@ void kernel(const char* command) {
 
     // use virtual_memory_map to remove user permissions for kernel memory
     virtual_memory_map(kernel_pagetable, (uintptr_t) 0, (uintptr_t) 0,
-		       PROC_START_ADDR, PTE_P | PTE_W);
+					   PROC_START_ADDR, PTE_P | PTE_W);
+   
+    // return user permissions to console
+    virtual_memory_map(kernel_pagetable, (uintptr_t) CONSOLE_ADDR, (uintptr_t) CONSOLE_ADDR,
+					   PAGESIZE, PTE_P | PTE_W | PTE_U);
+
+	// I believe my code is safe because I use v_m_m to assign permissions
+	// to all memory before the start of ANY processes. This means that 
+	// the assign_page function is never capable of assigning this memory
+	// to a process.
 
     // Set up process descriptors
     memset(processes, 0, sizeof(processes));
@@ -148,7 +157,7 @@ void process_setup(pid_t pid, int program_number) {
 //    success and -1 on failure. Used by the program loader.
 
 int assign_physical_page(uintptr_t addr, int8_t owner) {
-    if ((addr & 0xFFF) != 0
+    if ((addr & 0xFFF) != 0								 // this check is that the permission bits are 0
         || addr >= MEMSIZE_PHYSICAL
         || pageinfo[PAGENUMBER(addr)].refcount != 0) {
         return -1;
@@ -259,7 +268,9 @@ void exception(x86_64_registers* reg) {
 
     case INT_SYS_PAGE_ALLOC: {
         uintptr_t addr = current->p_registers.reg_rdi;
-        int r = assign_physical_page(addr, current->p_pid);
+		// changes the owner of addr to the given process,
+		// i'm still unsure what the security risk is?
+        int r = assign_physical_page(addr, current->p_pid); 
         if (r >= 0) {
             virtual_memory_map(current->p_pagetable, addr, addr,
                                PAGESIZE, PTE_P | PTE_W | PTE_U);

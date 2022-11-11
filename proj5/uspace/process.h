@@ -43,9 +43,12 @@ static inline void sys_yield(void) {
 //    Allocate a page of memory at address `addr` and allow process to
 //    write to it. `Addr` must be page-aligned (i.e., a multiple of
 //    PAGESIZE == 4096). Returns 0 on success and -1 on failure.
+//
+//    inline assembly explained here: https://www.ibiblio.org/gferg/ldp/GCC-Inline-Assembly-HOWTO.html
 static inline int sys_page_alloc(void* addr) {
     int result;
-    asm volatile ("int %1" : "=a" (result)
+    asm volatile ("int %1"		// generates a "INT_SYS_PAGE_ALLOC" type interrupt 
+		  : "=a" (result)
                   : "i" (INT_SYS_PAGE_ALLOC), "D" /* %rdi */ (addr)
                   : "cc", "memory");
     return result;

@@ -1,41 +1,27 @@
 #include "process.h"
 #include "lib.h"
-#define ALLOC_SLOWDOWN 100
 
+#ifndef KERNEL_ADDR
+// any random address in kernel space
+#define KERNEL_ADDR 0x10000 
+#endif
+#ifndef CONSOLE_ADDR
+#define CONSOLE_ADDR ((uintptr_t) console)
+#endif
 extern uint8_t end[];
 
-// These global variables go on the data page.
-uint8_t* heap_top;
-uint8_t* stack_bottom;
+// program that checks if a kernel address is accessible to user
+// (except CONSOLE_ADDR)
 
 void process_main(void) {
     pid_t p = sys_getpid();
     srand(p);
 
-    // The heap starts on the page right after the 'end' symbol,
-    // whose address is the first address not allocated to process code
-    // or data.
-    heap_top = ROUNDUP((uint8_t*) end, PAGESIZE);
+    vamapping kmap;
+    sys_mapping(KERNEL_ADDR, &kmap);
 
-    // The bottom of the stack is the first address on the current
-    // stack page (this process never needs more than one stack page).
-    stack_bottom = ROUNDDOWN((uint8_t*) read_rsp() - 1, PAGESIZE);
+    if(kmap.perm &(PTE_U))
+        panic("Kernel accessible by process!");
 
-    // Allocate heap pages until (1) hit the stack (out of address space)
-    // or (2) allocation fails (out of physical memory).
-    while (1) {
-        if ((rand() % ALLOC_SLOWDOWN) < p) {
-            if (heap_top == stack_bottom || sys_page_alloc(heap_top) < 0) {
-                break;
-            }
-            *heap_top = p;      /* check we have write access to new page */
-            heap_top += PAGESIZE;
-        }
-        sys_yield();
-    }
-
-    // After running out of memory, do nothing forever
-    while (1) {
-        sys_yield();
-    }
+    TEST_PASS();
 }

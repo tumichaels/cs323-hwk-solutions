@@ -1,0 +1,69 @@
+./build/rules.mk:# Eliminate default suffix rules
+./kernel/kernel.c://    Exception handler (for interrupts, traps, and faults).
+./kernel/kernel.c:    // (unless this is a kernel fault).
+./kernel/kernel.c:    if ((reg->reg_intno != INT_PAGEFAULT && reg->reg_intno != INT_GPF) // no error due to pagefault or general fault
+./kernel/kernel.c:            || (reg->reg_err & PFERR_USER)) // pagefault error in user mode 
+./kernel/kernel.c:        // Analyze faulting address and access type.
+./kernel/kernel.c:            panic("Kernel page fault for %p (%s %s, rip=%p)!\n",
+./kernel/kernel.c:                       "Process %d page fault for %p (%s %s, rip=%p)!\n",
+./kernel/kernel.c:    default:
+./kernel/kernel.c:        default_exception(current);
+./kernel/kernel.h:    P_BROKEN                            // faulted process
+./kernel/kernel.h:void default_exception(proc *p);
+./kernel/k-exception.S:#   (for interrupts, traps, and faults).
+./kernel/k-exception.S:        .globl pagefault_int_handler
+./kernel/k-exception.S:pagefault_int_handler:
+./kernel/k-exception.S:        .globl default_int_handler
+./kernel/k-exception.S:default_int_handler:
+./kernel/k-hardware.c:extern void default_int_handler(void);
+./kernel/k-hardware.c:extern void pagefault_int_handler(void);
+./kernel/k-hardware.c:                 (uint64_t) default_int_handler);
+./kernel/k-hardware.c:    // GPF and page fault
+./kernel/k-hardware.c:             (uint64_t) pagefault_int_handler);
+./kernel/k-hardware.c:    outb(IO_PIC1, 0x0a);             /* read IRR by default */
+./kernel/k-hardware.c:void default_exception(proc* p){
+./kernel/vm.c:extern void default_int_handler(void);
+./kernel/vm.c:extern void pagefault_int_handler(void);
+./kernel/vm.c:    assert(virtual_memory_lookup(pagetable, (uintptr_t) default_int_handler).pa
+./kernel/vm.c:           == (uintptr_t) default_int_handler);
+./obj/kernel.asm:0000000000040032 <pagefault_int_handler>:
+./obj/kernel.asm:        .globl pagefault_int_handler
+./obj/kernel.asm:pagefault_int_handler:
+./obj/kernel.asm:000000000004009c <default_int_handler>:
+./obj/kernel.asm:        .globl default_int_handler
+./obj/kernel.asm:default_int_handler:
+./obj/kernel.asm:    // (unless this is a kernel fault).
+./obj/kernel.asm:    if ((reg->reg_intno != INT_PAGEFAULT && reg->reg_intno != INT_GPF) // no error due to pagefault or general fault
+./obj/kernel.asm:            || (reg->reg_err & PFERR_USER)) // pagefault error in user mode 
+./obj/kernel.asm:        // Analyze faulting address and access type.
+./obj/kernel.asm:            panic("Kernel page fault for %p (%s %s, rip=%p)!\n",
+./obj/kernel.asm:                       "Process %d page fault for %p (%s %s, rip=%p)!\n",
+./obj/kernel.asm:    default:
+./obj/kernel.asm:        default_exception(current);
+./obj/kernel.asm:   4096b:	e8 14 1a 00 00       	call   42384 <default_exception>
+./obj/kernel.asm:extern void default_int_handler(void);
+./obj/kernel.asm:extern void pagefault_int_handler(void);
+./obj/kernel.asm:                 (uint64_t) default_int_handler);
+./obj/kernel.asm:    // GPF and page fault
+./obj/kernel.asm:             (uint64_t) pagefault_int_handler);
+./obj/kernel.asm:0000000000042384 <default_exception>:
+./obj/kernel.asm:void default_exception(proc* p){
+./obj/kernel.asm:    assert(virtual_memory_lookup(pagetable, (uintptr_t) default_int_handler).pa
+./obj/kernel.asm:           == (uintptr_t) default_int_handler);
+./obj/kernel.asm:        default:
+./obj/kernel.sym:0000000000040032 T pagefault_int_handler
+./obj/kernel.sym:000000000004009c T default_int_handler
+./obj/kernel.sym:0000000000042384 T default_exception
+./obj/p-allocator2.asm:        default:
+./obj/p-allocator3.asm:        default:
+./obj/p-allocator4.asm:        default:
+./obj/p-allocator.asm:        default:
+./obj/p-fork.asm:        default:
+./obj/p-forkexit.asm:        default:
+./obj/p-test.asm:        default:
+./shared/lib.c:        default:
+./shared/x86-64.h:// Page fault error flags
+./shared/x86-64.h:// These bits are stored in x86_registers::reg_err after a page fault trap.
+./shared/x86-64.h:#define INT_DOUBLEFAULT 0x8         // Double fault
+./shared/x86-64.h:#define INT_GPF         0xd         // General protection fault
+./shared/x86-64.h:#define INT_PAGEFAULT   0xe         // Page fault

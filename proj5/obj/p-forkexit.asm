@@ -119,7 +119,7 @@ static inline uintptr_t read_rsp(void) {
   1000ad:	48 8b 3d 54 1f 00 00 	mov    0x1f54(%rip),%rdi        # 102008 <heap_top>
   1000b4:	48 3b 3d 45 1f 00 00 	cmp    0x1f45(%rip),%rdi        # 102000 <stack_bottom>
   1000bb:	74 58                	je     100115 <process_main+0x115>
-    asm volatile ("int %1" : "=a" (result)
+    asm volatile ("int %1"		// generates a "INT_SYS_PAGE_ALLOC" type interrupt 
   1000bd:	cd 33                	int    $0x33
   1000bf:	85 c0                	test   %eax,%eax
   1000c1:	78 52                	js     100115 <process_main+0x115>

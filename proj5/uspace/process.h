@@ -59,7 +59,8 @@ static inline int sys_page_alloc(void* addr) {
 //    the parent, and return 0 to the child. On failure, return -1.
 static inline pid_t sys_fork(void) {
     pid_t result;
-    asm volatile ("int %1" : "=a" (result)
+    asm volatile ("int %1" 
+		  : "=a" (result)
                   : "i" (INT_SYS_FORK)
                   : "cc", "memory");
     return result;

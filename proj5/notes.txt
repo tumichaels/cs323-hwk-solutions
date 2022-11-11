@@ -42,8 +42,20 @@
     //}
 
 
+TODO: Something feels wrong with my next_free page function, i think    
+
 ========================================  Part 3  ========================================  
+
+TODO: Something feels wrong with my next_free page function, i think    
 
 1. simply reused the next_free_page function from before
 
 2. the address that weused in sys_page_alloc is now a virtual rather than physical address
+
+========================================  Part 3  ========================================  
+
+1. simply reused same method as in the sys_alloc interrupt
+
+
+
+

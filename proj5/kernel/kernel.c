@@ -193,10 +193,12 @@ void process_setup(pid_t pid, int program_number) {
     int r = program_load(&processes[pid], program_number, NULL);
     assert(r >= 0);
 
-    processes[pid].p_registers.reg_rsp = PROC_START_ADDR + PROC_SIZE * pid;
-    uintptr_t stack_page = processes[pid].p_registers.reg_rsp - PAGESIZE;
-    assign_physical_page(stack_page, pid);
-    virtual_memory_map(processes[pid].p_pagetable, stack_page, stack_page,
+    processes[pid].p_registers.reg_rsp = MEMSIZE_VIRTUAL; 
+    uintptr_t stack_page_va = processes[pid].p_registers.reg_rsp - PAGESIZE;
+    uintptr_t stack_page_pa;
+    next_free_page(&stack_page_pa);
+    assign_physical_page(stack_page_pa, pid);
+    virtual_memory_map(processes[pid].p_pagetable, stack_page_va, stack_page_pa,
                        PAGESIZE, PTE_P | PTE_W | PTE_U);
     processes[pid].p_state = P_RUNNABLE;
 }
@@ -326,6 +328,8 @@ void exception(x86_64_registers* reg) {
             virtual_memory_map(current->p_pagetable, va, pa,
                                PAGESIZE, PTE_P | PTE_W | PTE_U);
         }
+	else
+		console_printf(CPOS(23, 0), 0x0400, "Out of physical memory!\n");	
         current->p_registers.reg_rax = r;
         break;
     }

@@ -1,27 +1,34 @@
 #include "process.h"
 #include "lib.h"
 
-#ifndef KERNEL_ADDR
-// any random address in kernel space
-#define KERNEL_ADDR 0x10000 
-#endif
-#ifndef CONSOLE_ADDR
-#define CONSOLE_ADDR ((uintptr_t) console)
-#endif
+#define N 30
 extern uint8_t end[];
 
-// program that checks if a kernel address is accessible to user
-// (except CONSOLE_ADDR)
+// program that checks if pages on the heap are allocated without one-to-one
+// va->pa mapping
 
 void process_main(void) {
     pid_t p = sys_getpid();
     srand(p);
 
-    vamapping kmap;
-    sys_mapping(KERNEL_ADDR, &kmap);
+    vamapping pmap;
+    uint8_t * heap_top = ROUNDUP((uint8_t*) end, PAGESIZE);
 
-    if(kmap.perm &(PTE_U))
-        panic("Kernel accessible by process!");
+    // test N times
+    for(int i = 0 ; i < N ; i++){
+        int x = sys_page_alloc(heap_top);
+        if(x != 0)
+            panic("Error, sys_page_alloc failed!");
+        // lets make sure we write to the page and are able to read from it
+        *heap_top = p;
+        assert(*heap_top == p);
+        sys_mapping((uintptr_t)heap_top, &pmap);
+
+        if(pmap.pa == (uintptr_t)heap_top)
+            panic("Error, sys page alloc not virtualized!");
+
+        heap_top += PAGESIZE;
+    }
 
     TEST_PASS();
 }

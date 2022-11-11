@@ -319,6 +319,8 @@ void exception(x86_64_registers* reg) {
 
     case INT_SYS_PAGE_ALLOC: {
         uintptr_t addr = current->p_registers.reg_rdi;
+		// changes the owner of addr to the given process,
+		// i'm still unsure what the security risk is?
         int r = assign_physical_page(addr, current->p_pid); 
         if (r >= 0) {
             virtual_memory_map(current->p_pagetable, addr, addr,

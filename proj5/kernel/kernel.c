@@ -318,12 +318,12 @@ void exception(x86_64_registers* reg) {
         break;                  /* will not be reached */
 
     case INT_SYS_PAGE_ALLOC: {
-        uintptr_t addr = current->p_registers.reg_rdi;
-		// changes the owner of addr to the given process,
-		// i'm still unsure what the security risk is?
-        int r = assign_physical_page(addr, current->p_pid); 
+        uintptr_t va = current->p_registers.reg_rdi;
+	uintptr_t pa;
+	next_free_page(&pa);
+        int r = assign_physical_page(pa, current->p_pid); 
         if (r >= 0) {
-            virtual_memory_map(current->p_pagetable, addr, addr,
+            virtual_memory_map(current->p_pagetable, va, pa,
                                PAGESIZE, PTE_P | PTE_W | PTE_U);
         }
         current->p_registers.reg_rax = r;

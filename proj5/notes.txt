@@ -40,3 +40,10 @@
     //    vamapping vm = virtual_memory_lookup(kernel_pagetable, va);
     //    virtual_memory_map(processes[pid].p_pagetable, va, vm.pa, PAGESIZE, vm.perm);
     //}
+
+
+========================================  Part 3  ========================================  
+
+1. simply reused the next_free_page function from before
+
+2. the address that weused in sys_page_alloc is now a virtual rather than physical address

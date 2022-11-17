@@ -40,7 +40,7 @@ static inline void sys_yield(void) {
 //    the parent, and return 0 to the child. On failure, return -1.
 static inline pid_t sys_fork(void) {
     pid_t result;
-    asm volatile ("int %1" : "=a" (result)
+    asm volatile ("int %1" 
   10002c:	cd 34                	int    $0x34
             if (sys_fork() == 0) {
   10002e:	85 c0                	test   %eax,%eax
@@ -140,7 +140,7 @@ static inline uintptr_t read_rsp(void) {
   1000f2:	b8 00 00 00 00       	mov    $0x0,%eax
   1000f7:	e8 fa 0e 00 00       	call   100ff6 <console_printf>
   1000fc:	eb 80                	jmp    10007e <process_main+0x7e>
-    asm volatile ("int %1" : "=a" (result)
+    asm volatile ("int %1" 
   1000fe:	cd 34                	int    $0x34
             if (sys_fork() == 0) {
   100100:	85 c0                	test   %eax,%eax

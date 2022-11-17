@@ -20,7 +20,7 @@ void process_main(void) {
 //    the parent, and return 0 to the child. On failure, return -1.
 static inline pid_t sys_fork(void) {
     pid_t result;
-    asm volatile ("int %1" : "=a" (result)
+    asm volatile ("int %1" 
   100009:	cd 34                	int    $0x34
     // Fork a total of three new copies.
     pid_t p1 = sys_fork();

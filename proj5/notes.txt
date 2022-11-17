@@ -1,4 +1,8 @@
 
+There's a lot of error checking to do!!!
+
+
+
 ========================================  Part 1  ========================================  
 
 1. didn't see anyway to improve sys_page_allloc in the `exception` function
@@ -52,10 +56,25 @@ TODO: Something feels wrong with my next_free page function, i think
 
 2. the address that weused in sys_page_alloc is now a virtual rather than physical address
 
-========================================  Part 3  ========================================  
+========================================  Part 4  ========================================  
 
 1. simply reused same method as in the sys_alloc interrupt
 
+========================================  Part 5  ========================================  
+                                           Fork
+
+1. Here's the strategy laidout by the spec
+    a. first look for an open slot in processes. if there isn't one, return -1 to caller +
+    b. make a copy of the page table, you can use the process_setup function from earlier
+        this isn't too hard, but I shouldn't be looking at every single virtual address
+        but I'm not sure which ones I need to?
 
 
+2. what do i do if there's no good pid?
+    - return -1 and quit
 
+3. need to make this failure robust, ie cleanup on fork fail -- this suddenly looks very 
+   hard
+    - i need to check i have room to set up the page table
+    - i need to check that i have room for the data mapped to by the pagetable
+    - i need to reset the process slot

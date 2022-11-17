@@ -170,11 +170,11 @@ void pagetable_setup(pid_t pid) {
     ((x86_64_pagetable *) pagetable_pages[2])->entry[1] =
         (x86_64_pageentry_t) pagetable_pages[4] | PTE_P | PTE_W | PTE_U;
 
-    processes[pid].p_pagetable = (x86_64_pagetable *) pagetable_pages[0];
-
    
     memcpy((void *)pagetable_pages[3], &kernel_pagetable[3], 
 	   sizeof(x86_64_pageentry_t)*PAGENUMBER(PROC_START_ADDR));
+
+    processes[pid].p_pagetable = (x86_64_pagetable *) pagetable_pages[0];
 }
 
 
@@ -255,6 +255,19 @@ void syscall_mem_tog(proc* process){
     }
 }
 
+// ---------- FORK HELPERS ----------
+
+// next_free_process(void)
+//    returns the next free pid, -1 if there aren't any
+
+pid_t next_free_pid(void) {
+	for (pid_t pid = 1; pid < NPROC; pid++)
+		if (processes[pid].p_state == P_FREE)
+			return pid;
+	return -1;
+}
+
+
 // exception(reg)
 //    Exception handler (for interrupts, traps, and faults).
 //
@@ -321,8 +334,8 @@ void exception(x86_64_registers* reg) {
 
     case INT_SYS_PAGE_ALLOC: {
         uintptr_t va = current->p_registers.reg_rdi;
-	uintptr_t pa;
-	next_free_page(&pa);
+		uintptr_t pa;
+		next_free_page(&pa);
         int r = assign_physical_page(pa, current->p_pid); 
         if (r >= 0) {
             virtual_memory_map(current->p_pagetable, va, pa,
@@ -369,6 +382,37 @@ void exception(x86_64_registers* reg) {
         current->p_state = P_BROKEN;
         break;
     }
+
+	case INT_SYS_FORK:
+		// first look for position in processes array
+		pid_t child_pid;
+		if ((child_pid = next_free_pid()) == -1) {
+			current->p_registers.reg_rax = -1;
+			break;
+		}
+
+		// copy the state of parent into child
+		processes[child_pid] = processes[current->p_pid];
+		processes[child_pid].p_pid = child_pid;
+
+		// copy old pagetable into new pagetable
+		pagetable_setup(child_pid);
+		for (uintptr_t va = PROC_START_ADDR; va < MEMSIZE_VIRTUAL; va += PAGESIZE) {
+			vamapping map = virtual_memory_lookup(current->p_pagetable, va); // examining addr page by page
+			if (map.pn != -1) {
+				uintptr_t pa;
+				if (next_free_page(&pa) == 0) {
+					assign_physical_page(pa, child_pid);
+					virtual_memory_map(processes[child_pid].p_pagetable, va, pa, PAGESIZE, map.perm);
+					memcpy((void *) pa, (void *) map.pa, PAGESIZE);
+				}
+			}
+		}
+
+		// set return values
+		processes[child_pid].p_registers.reg_rax = 0;
+		current->p_registers.reg_rax = child_pid;
+		break;
 
     default:
         default_exception(current);

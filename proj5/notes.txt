@@ -78,3 +78,14 @@ TODO: Something feels wrong with my next_free page function, i think
     - i need to check i have room to set up the page table
     - i need to check that i have room for the data mapped to by the pagetable
     - i need to reset the process slot
+
+========================================  Part 6  ========================================  
+
+1. i didn't really get how the linkers and loaders worked so i'm a bit confused rn
+
+2. question -- how can each individual process see other processes getting kernel memory?
+
+3. modifying strategy:
+    a. modify fork to recognize shared pages                    +
+    b. modify segment loader to use virtual addresses           +
+    c. 

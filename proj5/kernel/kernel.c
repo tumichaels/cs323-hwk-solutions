@@ -399,14 +399,33 @@ void exception(x86_64_registers* reg) {
 		pagetable_setup(child_pid);
 		for (uintptr_t va = PROC_START_ADDR; va < MEMSIZE_VIRTUAL; va += PAGESIZE) {
 			vamapping map = virtual_memory_lookup(current->p_pagetable, va); // examining addr page by page
-			if (map.pn != -1) {
-				uintptr_t pa;
-				if (next_free_page(&pa) == 0) {
-					assign_physical_page(pa, child_pid);
-					virtual_memory_map(processes[child_pid].p_pagetable, va, pa, PAGESIZE, map.perm);
-					memcpy((void *) pa, (void *) map.pa, PAGESIZE);
+			
+			if (map.pn == -1) { // unused va
+				continue;
+			}
+			else if (map.perm == (PTE_P | PTE_U)) { // readonly permissions -- map but don't copy
+				pageinfo[map.pn].refcount++;	
+				virtual_memory_map(processes[child_pid].p_pagetable, va, map.pa, PAGESIZE, map.perm);
+			}
+			else {
+				uintptr_t free_page;
+				if (next_free_page(&free_page) == 0) {
+					assign_physical_page(free_page, child_pid);
+					virtual_memory_map(processes[child_pid].p_pagetable, va, free_page, PAGESIZE, map.perm);
+					memcpy((void *) free_page, (void *) map.pa, PAGESIZE);
 				}
 			}
+
+
+
+			//if (map.pn != -1) { // used page
+			//	uintptr_t pa;
+			//	if (next_free_page(&pa) == 0) {
+			//		assign_physical_page(pa, child_pid);
+			//		virtual_memory_map(processes[child_pid].p_pagetable, va, pa, PAGESIZE, map.perm);
+			//		memcpy((void *) pa, (void *) map.pa, PAGESIZE);
+			//	}
+			//}
 		}
 
 		// set return values

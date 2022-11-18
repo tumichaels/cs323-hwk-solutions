@@ -102,6 +102,16 @@ vamapping virtual_memory_lookup(x86_64_pagetable* pagetable, uintptr_t va);
 //    success and -1 on failure. Used by the program loader.
 int assign_physical_page(uintptr_t addr, int8_t owner);
 
+// ==================== some self defined helpers ====================
+
+// next_free_page(uintptr_t *)
+//    loads uintptr_t * with the address of the next free page
+//    returns 0 on success, -1 on failure
+
+int next_free_page(uintptr_t *fill);
+
+// ==================== some self defined helpers ====================
+
 // physical_memory_isreserved(pa)
 //    Returns non-zero iff `pa` is a reserved physical address.
 int physical_memory_isreserved(uintptr_t pa);

@@ -172,7 +172,7 @@ void pagetable_setup(pid_t pid) {
 
    
     memcpy((void *)pagetable_pages[3], &kernel_pagetable[3], 
-	   sizeof(x86_64_pageentry_t)*PAGENUMBER(PROC_START_ADDR));
+	   sizeof(x86_64_pageentry_t) * PAGENUMBER(PROC_START_ADDR));
 
     processes[pid].p_pagetable = (x86_64_pagetable *) pagetable_pages[0];
 }
@@ -403,7 +403,7 @@ void exception(x86_64_registers* reg) {
 			if (map.pn == -1) { // unused va
 				continue;
 			}
-			else if (map.perm == (PTE_P | PTE_U)) { // readonly permissions -- map but don't copy
+			else if ((map.perm & PTE_P) && !(map.perm & PTE_W) && (map.perm & PTE_U)) { // how to detect readonly memory?
 				pageinfo[map.pn].refcount++;	
 				virtual_memory_map(processes[child_pid].p_pagetable, va, map.pa, PAGESIZE, map.perm);
 			}

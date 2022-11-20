@@ -97,29 +97,35 @@ static int program_load_segment(proc* p, const elf_program* ph,
 			console_printf(CPOS(22, 0), 0xC000, "program_load_segment(pid %d): can't assign address %p\n", p->p_pid, addr);
 			return -1;
 		}
-	}	
+	}
 
 
-    // // allocate memory - if the segment needs to be writeable
-	//
-    // for (uintptr_t addr = va; addr < end_mem; addr += PAGESIZE) {
-    //     if (assign_physical_page(addr, p->p_pid) < 0
-    //         || virtual_memory_map(p->p_pagetable, addr, addr, PAGESIZE,
-    //                               PTE_P | PTE_W | PTE_U) < 0) {
-    //         console_printf(CPOS(22, 0), 0xC000, "program_load_segment(pid %d): can't assign address %p\n", p->p_pid, addr);
-    //         return -1;
-    //     }
-    // }
+    /* // allocate memory - if the segment needs to be writeable
+	*
+    * for (uintptr_t addr = va; addr < end_mem; addr += PAGESIZE) {
+    *     if (assign_physical_page(addr, p->p_pid) < 0
+    *         || virtual_memory_map(p->p_pagetable, addr, addr, PAGESIZE,
+    *                               PTE_P | PTE_W | PTE_U) < 0) {
+    *         console_printf(CPOS(22, 0), 0xC000, "program_load_segment(pid %d): can't assign address %p\n", p->p_pid, addr);
+    *         return -1;
+    *     }
+    * }
+	*/
 
     // ensure new memory mappings are active
     set_pagetable(p->p_pagetable);
 
     // copy data from executable image into process memory
-    //
-    // this part is causing me issues because its using an
-    // identity map
     memcpy((uint8_t*) va, src, end_file - va);
     memset((uint8_t*) end_file, 0, end_mem - end_file);
+
+	// change to readonly permissions
+	if ((ph->p_flags & ELF_PFLAG_WRITE) == 0) {
+		for (uintptr_t addr = va; addr < end_mem; addr += PAGESIZE) {
+			vamapping map = virtual_memory_lookup(p->p_pagetable, addr);
+			virtual_memory_map(p->p_pagetable, addr, map.pa, PAGESIZE, PTE_P | PTE_U );
+		}
+	}
 
     // restore kernel pagetable
     set_pagetable(kernel_pagetable);

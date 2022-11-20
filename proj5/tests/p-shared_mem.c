@@ -34,6 +34,7 @@ void process_main(void) {
     sys_mapping((uintptr_t) code_page, &child_cmap);
 
     if(child_cmap.pa != map.pa){
+	panic("code page va: %p \t code page pa: %p \t child code page pa: %p\n", code_page, map.pa, child_cmap.pa);
         panic("Error, code pages not shared!");
     }
 

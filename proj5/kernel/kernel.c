@@ -75,6 +75,12 @@ void memshow_virtual(x86_64_pagetable* pagetable, const char* name);
 void memshow_virtual_animate(void);
 
 
+// ============================== mine ============================== 
+int forked;
+int freed;
+
+
+
 // kernel(command)
 //    Initialize the hardware and processes and start running. The `command`
 //    string is an optional string passed from the boot loader.
@@ -135,8 +141,8 @@ void kernel(const char* command) {
 
 int next_free_page(uintptr_t *fill) {
 	for (uintptr_t pa = 0; pa < MEMSIZE_PHYSICAL; pa += PAGESIZE) {
-		if (pageinfo[PAGENUMBER(pa)].owner == PO_FREE && // i'm confused by owner now
-		    pageinfo[PAGENUMBER(pa)].refcount == 0) {
+		if (pageinfo[PAGENUMBER(pa)].owner == PO_FREE 
+			&& pageinfo[PAGENUMBER(pa)].refcount == 0) {
 			*fill = pa;
 		    return 0;
 		}
@@ -153,13 +159,12 @@ int pagetable_setup(pid_t pid) {
     uintptr_t pagetable_pages[5];
 
     for (int i = 0; i< 5; i++) {
-		if (next_free_page(&pagetable_pages[i]) == 0) {
-			pageinfo[PAGENUMBER(pagetable_pages[i])].owner = pid;
-			pageinfo[PAGENUMBER(pagetable_pages[i])].refcount = 1;
-			memset((void *) pagetable_pages[i], 0, PAGESIZE);
+		if (next_free_page(&pagetable_pages[i])
+		    || assign_physical_page(pagetable_pages[i], pid)) {
+			return -1;
 		}
 		else {
-			return -1;
+			memset((void *) pagetable_pages[i], 0, PAGESIZE);
 		}
     }
 
@@ -275,7 +280,6 @@ pid_t next_free_pid(void) {
 }
 
 
-
 // copy_pagetable(proc *dest, proc *src)
 //		maps used virtual addresses in src. if the 
 //		address is readonly, updates page ref
@@ -293,6 +297,11 @@ int copy_pagetable(proc *dest, proc *src) {
 		else if ((map.perm & PTE_P) && !(map.perm & PTE_W) && (map.perm & PTE_U)) { // how to detect readonly memory?
 			pageinfo[map.pn].refcount++;	
 			virtual_memory_map(dest->p_pagetable, va, map.pa, PAGESIZE, map.perm);
+			//if (map.pa == 0x7000) {
+			//	log_printf("refed by proc: %d, refcount: %d\n", dest->p_pid, pageinfo[PAGENUMBER(0x7000)].refcount);
+			//	console_printf(CPOS(23, 0), 0x0, 0);	
+			//	console_printf(CPOS(23, 0), 0x1100, "proc 1 code page owner: %d, proc 1 code page refcount: %d\n", pageinfo[PAGENUMBER(0x7000)].owner, pageinfo[PAGENUMBER(0x7000)].refcount); 
+			//}
 		}
 		else {
 			uintptr_t free_page;
@@ -300,7 +309,9 @@ int copy_pagetable(proc *dest, proc *src) {
 				|| assign_physical_page(free_page, dest->p_pid)
 				|| virtual_memory_map(dest->p_pagetable, va, free_page, PAGESIZE, map.perm)) {
 
-				// failure conditions are - no free page, no allocated l1 pagetable
+				// failure conditions are 
+				//  no free page, 
+				//  no allocated l1 pagetable <-- i don't think we'll ever actually run into this 
 
 				return -1;
 			}
@@ -313,6 +324,49 @@ int copy_pagetable(proc *dest, proc *src) {
 	return 0;
 }
 
+// free_pages_pa(proc *)
+//		frees physical pages that belong to process pid
+//		this is used when you don't have a pagetable to 
+//		perform address translation with
+//
+//		in particular, note that it only frees pages that
+//		it owns. this must be called after freeing virtual
+//		pages!
+//
+//		in practice, this function frees pagetable pages
+
+
+void free_pages_pa(proc *p) {
+	for (uintptr_t addr = 0; addr < MEMSIZE_PHYSICAL; addr += PAGESIZE) {
+		if (pageinfo[PAGENUMBER(addr)].owner == p->p_pid) {
+			pageinfo[PAGENUMBER(addr)].owner = PO_FREE;
+			--pageinfo[PAGENUMBER(addr)].refcount;
+		}
+	}
+}
+
+// free_process_pages(pid_t pid)
+//		frees physical pages allocated to the process with pid
+
+void free_pages_va(proc *p) {
+	for (uintptr_t va = PROC_START_ADDR; va < MEMSIZE_VIRTUAL; va += PAGESIZE) {
+		vamapping map = virtual_memory_lookup(p->p_pagetable, va); // examining addr page by page
+		
+		if (map.pn == -1) { // unused va
+			continue;
+		}
+		else if ((map.perm & PTE_P) && (map.perm & PTE_U)) {
+			if (pageinfo[map.pn].owner == p->p_pid)
+				pageinfo[map.pn].owner = PO_FREE;
+			--pageinfo[map.pn].refcount;	
+			//if (map.pa == 0x7000) {
+			//	log_printf("freed by: %d, refcount: %d\n", p->p_pid, pageinfo[PAGENUMBER(0x7000)].refcount);
+			//	console_printf(CPOS(23, 0), 0x0, 0);	
+			//	console_printf(CPOS(23, 0), 0x1100, "proc 1 code page owner: %d, proc 1 code page refcount: %d\n", pageinfo[PAGENUMBER(0x7000)].owner, pageinfo[PAGENUMBER(0x7000)].refcount); 
+			//}
+		}
+	}
+}
 
 // ----------     END      ----------
 
@@ -445,16 +499,42 @@ void exception(x86_64_registers* reg) {
 			break;
 		}
 
+		proc *child_proc = &processes[child_pid];
+
 		// copy the state of parent into child
-		processes[child_pid] = processes[current->p_pid];
-		processes[child_pid].p_pid = child_pid;
+		*child_proc = processes[current->p_pid];
+		child_proc->p_pid = child_pid;
 
-		// copy old pagetable into new pagetable
-		pagetable_setup(child_pid);
+		
+		// setup and copy the pagetable
+		if (pagetable_setup(child_proc->p_pid)) {
+			free_pages_pa(child_proc); // goes through all pa and frees ones that belong to child_proc
+			memset(child_proc, 0, sizeof(*child_proc));
 
-		// set return values
-		processes[child_pid].p_registers.reg_rax = 0;
+			current->p_registers.reg_rax = -1;
+			break;
+		}
+		else if (copy_pagetable(child_proc, current)) {
+			free_pages_va(child_proc); // goes through all va and frees corresponding physical page
+			free_pages_pa(child_proc); // goes through all pa and frees ones that belong to child_proc
+
+			memset(child_proc, 0, sizeof(*child_proc));
+			current->p_registers.reg_rax = -1;
+			break;
+		}
+
+
+		// successful fork! set return registers
+                console_printf(CPOS(24, 0), 0, "\n");
+
+		child_proc->p_registers.reg_rax = 0;
 		current->p_registers.reg_rax = child_pid;
+		break;
+
+	case INT_SYS_EXIT:
+		free_pages_va(current); // goes through all va and frees corresponding physical page
+		free_pages_pa(current); // goes through all pa and frees ones that belong to child_proc
+		memset(&processes[current->p_pid], 0, sizeof(*current));
 		break;
 
     default:
@@ -588,6 +668,10 @@ void check_page_table_ownership(x86_64_pagetable* pt, pid_t pid) {
 static void check_page_table_ownership_level(x86_64_pagetable* pt, int level,
                                              int owner, int refcount) {
     assert(PAGENUMBER(pt) < NPAGES);
+    if (pageinfo[PAGENUMBER(pt)].owner != owner) {
+	panic("pt addr: %p, supposed owner of pt: %d, actual owner of pt: %d, refcount: %d", pt, owner, pageinfo[PAGENUMBER(pt)].owner,
+			refcount);
+    }
     assert(pageinfo[PAGENUMBER(pt)].owner == owner);
     assert(pageinfo[PAGENUMBER(pt)].refcount == refcount);
     if (level < 3) {

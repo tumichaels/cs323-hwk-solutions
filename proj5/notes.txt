@@ -84,6 +84,20 @@ TODO: Something feels wrong with my next_free page function, i think
     - i need to check that i have room for the data mapped to by the pagetable
     - i need to reset the process slot
 
+4, this is a note from when i'm about to do exit()
+
+    - i've created a new function called copy_pagetable
+    - copy pagetable copies the pagetable of one process into another
+    - the way that it does this is by checking literally every virtual address
+        - THIS IS NOT A GOOD STRATEGY, we should be analyzing the pagetable itself
+        - however, this is something that's really quite tricky to do  
+
+    - if i can design a function that works like this, i'll also have a much easier time
+      freeing stuff as well
+
+    - welp apparently the spec said to just examine every virtual address. if that's the
+      case, then we'll simply do that then
+
 ========================================  Part 6  ========================================  
 
 1. i didn't really get how the linkers and loaders worked so i'm a bit confused rn
@@ -139,7 +153,31 @@ TODO: Something feels wrong with my next_free page function, i think
    3. fork
         a. the big thing is no more free pages
         b. if you run out of free pages halfway through forking, you have to start deleting
-        c. also have to worry about no new pids
+        c. also have to worry about no new pids                                                 +
         d. i wonder if there's a more natural way to check if a page is unused than if pn=-1
             c. have to look at mapping object specs
 
+        e. i need to check what the default state for a process is
+            i. i assume i can just memset to 0, then set the p_state to free      +
+
+
+        f. i need to write a helper that frees up pagetable pages. the 3 types are:
+            1. actual pagetable pages       --> completely freed ( i think )
+            2. readonly physical pages      --> refcount decreased by 1
+            3. writable phsyical pages      --> completely freed
+
+            - for case 1, i'm assuming that all pagetable pages are in the kernel space
+            - for cases 2 and 3, i'll simply examine every virtual address outside of 
+              the kernel space
+
+        g. for exit, you need to think about the case in which the parent exits before
+           the child -- what on earth does happen then?
+
+            a. i see, this is why when you want a free page you should also check the 
+               refcount as well!
+
+            b. ex: parent code is shared with child, but parent exits first
+               then the code page will have P_FREE as the owner, but the refcount will
+               still be 1. the child will still be able to access this page because it
+               will still have the virtual address to this page, and it will need to 
+               clean up its virtual addresses

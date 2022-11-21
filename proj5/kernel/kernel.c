@@ -130,11 +130,11 @@ void kernel(const char* command) {
 
 
 // next_free_page(uintptr_t *)
-//    loads uintptr_t * with the address of the next free page
+//    loads uintptr_t * with the address of the next free page in the kernel
 //    returns 0 on success, -1 on failure
 
 int next_free_page(uintptr_t *fill) {
-	for (uintptr_t pa = 0; pa += PAGESIZE; pa < PROC_START_ADDR) {
+	for (uintptr_t pa = 0; pa < MEMSIZE_PHYSICAL; pa += PAGESIZE) {
 		if (pageinfo[PAGENUMBER(pa)].owner == PO_FREE && // i'm confused by owner now
 		    pageinfo[PAGENUMBER(pa)].refcount == 0) {
 			*fill = pa;
@@ -146,8 +146,10 @@ int next_free_page(uintptr_t *fill) {
 
 // pagetable_setup(pid)
 //    given a process, sets up pagetable in the kernel space
+//
+//    returns 0 on success, -1 on failure
 
-void pagetable_setup(pid_t pid) {
+int pagetable_setup(pid_t pid) {
     uintptr_t pagetable_pages[5];
 
     for (int i = 0; i< 5; i++) {
@@ -155,6 +157,9 @@ void pagetable_setup(pid_t pid) {
 			pageinfo[PAGENUMBER(pagetable_pages[i])].owner = pid;
 			pageinfo[PAGENUMBER(pagetable_pages[i])].refcount = 1;
 			memset((void *) pagetable_pages[i], 0, PAGESIZE);
+		}
+		else {
+			return -1;
 		}
     }
 
@@ -175,6 +180,8 @@ void pagetable_setup(pid_t pid) {
 	   sizeof(x86_64_pageentry_t) * PAGENUMBER(PROC_START_ADDR));
 
     processes[pid].p_pagetable = (x86_64_pagetable *) pagetable_pages[0];
+
+    return 0;
 }
 
 
@@ -268,6 +275,47 @@ pid_t next_free_pid(void) {
 }
 
 
+
+// copy_pagetable(proc *dest, proc *src)
+//		maps used virtual addresses in src. if the 
+//		address is readonly, updates page ref
+//		otherwise, copies contents to a new physical page
+//
+//		returns 0 on success, -1 on failure
+
+int copy_pagetable(proc *dest, proc *src) {
+	for (uintptr_t va = PROC_START_ADDR; va < MEMSIZE_VIRTUAL; va += PAGESIZE) {
+		vamapping map = virtual_memory_lookup(src->p_pagetable, va); // examining addr page by page
+		
+		if (map.pn == -1) { // unused va
+			continue;
+		}
+		else if ((map.perm & PTE_P) && !(map.perm & PTE_W) && (map.perm & PTE_U)) { // how to detect readonly memory?
+			pageinfo[map.pn].refcount++;	
+			virtual_memory_map(dest->p_pagetable, va, map.pa, PAGESIZE, map.perm);
+		}
+		else {
+			uintptr_t free_page;
+			if (next_free_page(&free_page)
+				|| assign_physical_page(free_page, dest->p_pid)
+				|| virtual_memory_map(dest->p_pagetable, va, free_page, PAGESIZE, map.perm)) {
+
+				// failure conditions are - no free page, no allocated l1 pagetable
+
+				return -1;
+			}
+			else {
+				memcpy((void *) free_page, (void *) map.pa, PAGESIZE);
+			}
+		}
+	}
+
+	return 0;
+}
+
+
+// ----------     END      ----------
+
 // exception(reg)
 //    Exception handler (for interrupts, traps, and faults).
 //
@@ -332,17 +380,22 @@ void exception(x86_64_registers* reg) {
         schedule();
         break;                  /* will not be reached */
 
-    case INT_SYS_PAGE_ALLOC: {
-        uintptr_t va = current->p_registers.reg_rdi;
+    case INT_SYS_PAGE_ALLOC: 
+	{
+        uintptr_t va = current->p_registers.reg_rdi; 
 		uintptr_t pa;
-		next_free_page(&pa);
-        int r = assign_physical_page(pa, current->p_pid); 
-        if (r >= 0) {
-            virtual_memory_map(current->p_pagetable, va, pa,
-                               PAGESIZE, PTE_P | PTE_W | PTE_U);
-        }
-	else
-		console_printf(CPOS(23, 0), 0x0400, "Out of physical memory!\n");	
+		int r = 0;
+		if (virtual_memory_lookup(current->p_pagetable, va).pn != -1) {
+			r = -1;
+		}
+		else if (next_free_page(&pa) || assign_physical_page(pa, current->p_pid)) {
+			console_printf(CPOS(23, 0), 0x0400, "Out of physical memory!\n");	
+			r = -1;
+		}
+		else if (virtual_memory_map(current->p_pagetable, va, pa, PAGESIZE, PTE_P | PTE_W | PTE_U)) {
+			r = -1;
+		}
+
         current->p_registers.reg_rax = r;
         break;
     }
@@ -384,9 +437,10 @@ void exception(x86_64_registers* reg) {
     }
 
 	case INT_SYS_FORK:
-		// first look for position in processes array
+		// find free pid
 		pid_t child_pid;
 		if ((child_pid = next_free_pid()) == -1) {
+			console_printf(CPOS(23, 0), 0x0400, "Max processes (%d) reached!\n", NPROC);	
 			current->p_registers.reg_rax = -1;
 			break;
 		}
@@ -397,36 +451,6 @@ void exception(x86_64_registers* reg) {
 
 		// copy old pagetable into new pagetable
 		pagetable_setup(child_pid);
-		for (uintptr_t va = PROC_START_ADDR; va < MEMSIZE_VIRTUAL; va += PAGESIZE) {
-			vamapping map = virtual_memory_lookup(current->p_pagetable, va); // examining addr page by page
-			
-			if (map.pn == -1) { // unused va
-				continue;
-			}
-			else if ((map.perm & PTE_P) && !(map.perm & PTE_W) && (map.perm & PTE_U)) { // how to detect readonly memory?
-				pageinfo[map.pn].refcount++;	
-				virtual_memory_map(processes[child_pid].p_pagetable, va, map.pa, PAGESIZE, map.perm);
-			}
-			else {
-				uintptr_t free_page;
-				if (next_free_page(&free_page) == 0) {
-					assign_physical_page(free_page, child_pid);
-					virtual_memory_map(processes[child_pid].p_pagetable, va, free_page, PAGESIZE, map.perm);
-					memcpy((void *) free_page, (void *) map.pa, PAGESIZE);
-				}
-			}
-
-
-
-			//if (map.pn != -1) { // used page
-			//	uintptr_t pa;
-			//	if (next_free_page(&pa) == 0) {
-			//		assign_physical_page(pa, child_pid);
-			//		virtual_memory_map(processes[child_pid].p_pagetable, va, pa, PAGESIZE, map.perm);
-			//		memcpy((void *) pa, (void *) map.pa, PAGESIZE);
-			//	}
-			//}
-		}
 
 		// set return values
 		processes[child_pid].p_registers.reg_rax = 0;

@@ -7,6 +7,11 @@ There's a lot of error checking to do!!!
 
 1. didn't see anyway to improve sys_page_allloc in the `exception` function
 
+2. now that we're checking for errors, here's my new strategy for sys_page_alloc:
+        a. check that the va isn't already mapped to
+        b. try to get a free page
+        c. perform a virtual memory mapping
+
 
 ========================================  Part 2  ========================================  
 
@@ -88,4 +93,53 @@ TODO: Something feels wrong with my next_free page function, i think
 3. modifying strategy:
     a. modify fork to recognize shared pages                    +
     b. modify segment loader to use virtual addresses           +
-    c. 
+
+4. well it was literally this easy
+
+5. to mark memory as read only, i simply changed the permissions after they did the copying
+    a. sidenote, the copying works because we switch to the process pagetables, so there is
+       some automatic / cpu address translation going on
+    b. this implies that there might be a way to change permissions aggressively using 
+       memset? or other ways of picking pagetables??
+
+6. to detect readonly memory, i just compared each field -- present, writeable, and user
+   and checked whether they were in the state i wanted -- (1, 0, 1)
+
+7. i had a bug where i was using the maximum value instead of the iterator in k-loader
+
+
+========================================  Part 7  ========================================  
+
+1. present michael finally has to deal with past michael not adding error checks / failure
+   conditions to any of his code
+
+2. on the bright side, present michael understands the systems stuff a lot better than 
+   past michael
+
+3. my strategy is to go through everywhere with potential failure flags and take care of
+   them. here is a list that i think could possibly fail:
+
+   1. sys_page_alloc -- specifically look at the arguments to this function
+        a. i think the danger of this function is that you can try to allocate a page to 
+           the same memory address more than once! we need to prevent that somehow
+        b. I've fixed sys_alloc and it's very clean :)
+
+   2. pagetable_setup and its helper function next_free_page
+        a. something is bothering me about next_free_page:
+        b. I only ever ask next_free_page for physical addresses less than 
+           proc_start_addr, yet somehow processes are getting memory in the process space
+            i. i figured it out --> i had my increment and condition wrong in the for loop
+               i would never have gotten a failure condition from next_free_page
+
+        c. i've decided not to address (b) for now, but i've updated pagetable_setup
+            i. pagetable_setup returns 0 on success, -1 on failure
+           ii. i'm considering whether it should return the number of pages it messed
+               with instead? ex: if it got 3 pages but couldn't get a 4th, it returns 3
+
+   3. fork
+        a. the big thing is no more free pages
+        b. if you run out of free pages halfway through forking, you have to start deleting
+        c. also have to worry about no new pids
+        d. i wonder if there's a more natural way to check if a page is unused than if pn=-1
+            c. have to look at mapping object specs
+

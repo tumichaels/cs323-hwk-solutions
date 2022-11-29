@@ -336,11 +336,15 @@ int copy_pagetable(proc *dest, proc *src) {
 //		in practice, this function frees pagetable pages
 
 
-void free_pages_pa(proc *p) {
+void free_pages_pagetable_pages(proc *p) {
+	int p = 0;
 	for (uintptr_t addr = 0; addr < MEMSIZE_PHYSICAL; addr += PAGESIZE) {
 		if (pageinfo[PAGENUMBER(addr)].owner == p->p_pid) {
 			pageinfo[PAGENUMBER(addr)].owner = PO_FREE;
 			--pageinfo[PAGENUMBER(addr)].refcount;
+			p++;
+			if (p == 5)
+				return;
 		}
 	}
 }
@@ -439,7 +443,10 @@ void exception(x86_64_registers* reg) {
         uintptr_t va = current->p_registers.reg_rdi; 
 		uintptr_t pa;
 		int r = 0;
-		if (virtual_memory_lookup(current->p_pagetable, va).pn != -1) {
+		if (va % PAGESIZE != 0) {
+			r = -1;
+		}
+		else if (virtual_memory_lookup(current->p_pagetable, va).pn != -1) {
 			r = -1;
 		}
 		else if (next_free_page(&pa) || assign_physical_page(pa, current->p_pid)) {
@@ -508,15 +515,15 @@ void exception(x86_64_registers* reg) {
 		
 		// setup and copy the pagetable
 		if (pagetable_setup(child_proc->p_pid)) {
-			free_pages_pa(child_proc); // goes through all pa and frees ones that belong to child_proc
+			free_pages_pagetable_pages(child_proc);	     // goes through all pa and frees ones that belong to child_proc
 			memset(child_proc, 0, sizeof(*child_proc));
 
 			current->p_registers.reg_rax = -1;
 			break;
 		}
 		else if (copy_pagetable(child_proc, current)) {
-			free_pages_va(child_proc); // goes through all va and frees corresponding physical page
-			free_pages_pa(child_proc); // goes through all pa and frees ones that belong to child_proc
+			free_pages_va(child_proc);		    // goes through all va and frees corresponding physical page
+			free_pages_pagetable_pages(child_proc);	    // goes through all pa and frees ones that belong to child_proc
 
 			memset(child_proc, 0, sizeof(*child_proc));
 			current->p_registers.reg_rax = -1;
@@ -532,8 +539,8 @@ void exception(x86_64_registers* reg) {
 		break;
 
 	case INT_SYS_EXIT:
-		free_pages_va(current); // goes through all va and frees corresponding physical page
-		free_pages_pa(current); // goes through all pa and frees ones that belong to child_proc
+		free_pages_va(current);			// goes through all va and frees corresponding physical page
+		free_pages_pagetable_pages(current);	// goes through all pa and frees ones that belong to child_proc
 		memset(&processes[current->p_pid], 0, sizeof(*current));
 		break;
 

@@ -346,16 +346,30 @@ int copy_pagetable(proc *dest, proc *src) {
 
 
 void free_pagetable_pages(proc *p) {
-	int c = 0;
-	for (uintptr_t addr = 0; addr < MEMSIZE_PHYSICAL; addr += PAGESIZE) {
-		if (pageinfo[PAGENUMBER(addr)].owner == p->p_pid) {
-			pageinfo[PAGENUMBER(addr)].owner = PO_FREE;
-			--pageinfo[PAGENUMBER(addr)].refcount;
-			c++;
-			if (c == 5)
-				return;
-		}
-	}
+	x86_64_pagetable *page = p->p_pagetable;
+
+	// l4 pagetable	
+	pageinfo[PAGENUMBER(page)].owner = PO_FREE;
+	--pageinfo[PAGENUMBER(page)].refcount;
+
+	// l3 pagetable
+	page = (x86_64_pagetable *) PTE_ADDR(page->entry[0]);
+	pageinfo[PAGENUMBER(page)].owner = PO_FREE;
+	--pageinfo[PAGENUMBER(page)].refcount;
+
+	// l2 pagetable
+	page = (x86_64_pagetable *) PTE_ADDR(page->entry[0]); 
+	pageinfo[PAGENUMBER(page)].owner = PO_FREE;
+	--pageinfo[PAGENUMBER(page)].refcount;
+
+	// l1 pagetables
+	x86_64_pagetable *l1 = (x86_64_pagetable *) PTE_ADDR(page->entry[0]);
+	pageinfo[PAGENUMBER(l1)].owner = PO_FREE;
+	--pageinfo[PAGENUMBER(l1)].refcount;
+	
+	l1 = (x86_64_pagetable *) PTE_ADDR(page->entry[1]);
+	pageinfo[PAGENUMBER(l1)].owner = PO_FREE;
+	--pageinfo[PAGENUMBER(l1)].refcount;
 }
 
 // free_process_pages(pid_t pid)

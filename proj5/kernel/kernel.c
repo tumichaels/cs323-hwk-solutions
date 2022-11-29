@@ -134,20 +134,31 @@ void kernel(const char* command) {
     run(&processes[1]);
 }
 
+// next_free_pages(uintptr_t *, int)
+//    loads uintptr_t * with the address of the next n free pages in the kernel
+//    returns 0 on success, -1 on failure
+
+int next_free_pages(uintptr_t *fill, int n) {
+	int c = 0;
+	for (uintptr_t pa = 0; pa < MEMSIZE_PHYSICAL; pa += PAGESIZE) {
+		if (pageinfo[PAGENUMBER(pa)].owner == PO_FREE 
+			&& pageinfo[PAGENUMBER(pa)].refcount == 0) {
+			fill[c] = pa;
+			c++;
+		}
+
+		if (c == n)
+			return 0;
+	}
+	return -1;
+}
 
 // next_free_page(uintptr_t *)
 //    loads uintptr_t * with the address of the next free page in the kernel
 //    returns 0 on success, -1 on failure
 
 int next_free_page(uintptr_t *fill) {
-	for (uintptr_t pa = 0; pa < MEMSIZE_PHYSICAL; pa += PAGESIZE) {
-		if (pageinfo[PAGENUMBER(pa)].owner == PO_FREE 
-			&& pageinfo[PAGENUMBER(pa)].refcount == 0) {
-			*fill = pa;
-		    return 0;
-		}
-	}
-	return -1;
+	return next_free_pages(fill, 1);
 }
 
 // pagetable_setup(pid)
@@ -158,14 +169,12 @@ int next_free_page(uintptr_t *fill) {
 int pagetable_setup(pid_t pid) {
     uintptr_t pagetable_pages[5];
 
+    if (next_free_pages(pagetable_pages, 5))
+	    return -1;
+
     for (int i = 0; i< 5; i++) {
-		if (next_free_page(&pagetable_pages[i])
-		    || assign_physical_page(pagetable_pages[i], pid)) {
-			return -1;
-		}
-		else {
-			memset((void *) pagetable_pages[i], 0, PAGESIZE);
-		}
+	assign_physical_page(pagetable_pages[i], pid);
+	memset((void *) pagetable_pages[i], 0, PAGESIZE);
     }
 
     ((x86_64_pagetable *) pagetable_pages[0])->entry[0] =
@@ -336,14 +345,14 @@ int copy_pagetable(proc *dest, proc *src) {
 //		in practice, this function frees pagetable pages
 
 
-void free_pages_pagetable_pages(proc *p) {
-	int p = 0;
+void free_pagetable_pages(proc *p) {
+	int c = 0;
 	for (uintptr_t addr = 0; addr < MEMSIZE_PHYSICAL; addr += PAGESIZE) {
 		if (pageinfo[PAGENUMBER(addr)].owner == p->p_pid) {
 			pageinfo[PAGENUMBER(addr)].owner = PO_FREE;
 			--pageinfo[PAGENUMBER(addr)].refcount;
-			p++;
-			if (p == 5)
+			c++;
+			if (c == 5)
 				return;
 		}
 	}
@@ -515,15 +524,13 @@ void exception(x86_64_registers* reg) {
 		
 		// setup and copy the pagetable
 		if (pagetable_setup(child_proc->p_pid)) {
-			free_pages_pagetable_pages(child_proc);	     // goes through all pa and frees ones that belong to child_proc
 			memset(child_proc, 0, sizeof(*child_proc));
-
 			current->p_registers.reg_rax = -1;
 			break;
 		}
 		else if (copy_pagetable(child_proc, current)) {
 			free_pages_va(child_proc);		    // goes through all va and frees corresponding physical page
-			free_pages_pagetable_pages(child_proc);	    // goes through all pa and frees ones that belong to child_proc
+			free_pagetable_pages(child_proc);	    // goes through all pa and frees ones that belong to child_proc
 
 			memset(child_proc, 0, sizeof(*child_proc));
 			current->p_registers.reg_rax = -1;
@@ -540,7 +547,7 @@ void exception(x86_64_registers* reg) {
 
 	case INT_SYS_EXIT:
 		free_pages_va(current);			// goes through all va and frees corresponding physical page
-		free_pages_pagetable_pages(current);	// goes through all pa and frees ones that belong to child_proc
+		free_pagetable_pages(current);	// goes through all pa and frees ones that belong to child_proc
 		memset(&processes[current->p_pid], 0, sizeof(*current));
 		break;
 

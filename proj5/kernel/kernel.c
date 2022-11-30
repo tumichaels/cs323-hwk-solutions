@@ -469,6 +469,9 @@ void exception(x86_64_registers* reg) {
 		if (va % PAGESIZE != 0) {
 			r = -1;
 		}
+		else if (va >= MEMSIZE_VIRTUAL + PAGESIZE) {
+			r = -1;
+		}
 		else if (virtual_memory_lookup(current->p_pagetable, va).pn != -1) {
 			r = -1;
 		}

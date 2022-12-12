@@ -1,0 +1,26 @@
+========================================  Part 1  ========================================  
+
+1. we will need to keep track of each process' break and heap start address
+    - are these not the same thing?
+    - no they're not, the heap start address is the original spot, the break is the top of
+     the heap
+
+2. sbrk takes a VIRTUAAL ADDRESS not a physical one
+    - you might ask how brk works if you get an address in the middle of a page:
+    - well, when you're accessing memory, you'll first have to check if the 
+      unaligned value needs an additional page
+    - essentially, we are still working with units of pages!
+
+3. we only care about the brk function -- returns 0 on success, -1 on error
+
+4. brk outline:
+    a. align the input address --> should always go to smallest page boundary >= addr
+    b. allocate pages if needed
+    c. change breakpoint to input address
+
+https://stackoverflow.com/questions/65440115/does-brk-and-sbrk-round-the-program-break-to-the-nearest-page-boundary
+
+5. we need to error check the brk call, here are some that i think might pop up
+    a. target below heap start address
+    b. target inside already used memory, ie mmapped region or stack
+        i. extra note, i think mmap will default to a place away from both

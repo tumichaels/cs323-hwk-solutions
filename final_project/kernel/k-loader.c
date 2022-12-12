@@ -109,8 +109,8 @@ static int program_load_segment(proc* p, const elf_program* ph,
                     PTE_P | PTE_U);
         }
     }
-    // TODO : Add code here
-    p->original_break += ph->p_va + ph->p_memsz;
+    // TODO : Add code here -> done
+    p->original_break += (ph->p_va + ph->p_memsz + (PAGESIZE - 1)) & ~(PAGESIZE - 1);
     p->program_break = p->original_break;
     return 0;
 }

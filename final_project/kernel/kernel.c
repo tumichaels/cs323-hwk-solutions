@@ -157,21 +157,44 @@ int syscall_page_alloc(uintptr_t addr) {
     return process_page_alloc(current, addr);
 }
 
-// PAGE_ALIGN aligns to nearest page with addr >= input
+// PAGE_ALIGN aligns to nearest page with addr <= input
 
-# define PAGE_ALIGN(addr) ((addr + (PAGESIZE - 1)) & (PAGESIZE - 1))
+# define PAGE_ALIGN(addr) (PAGEADDRESS(PAGENUMBER(addr)))
 
 int brk(proc *p, uintptr_t addr) {
 	newbrk = PAGE_ALIGN(addr);
 	oldbrk = PAGE_ALIGN(p->program_break);
-	
-	if (newbrk < )
-	return 0;
+
+	// error checking on break values
+	if (newbrk < p->original_break || newbrk >= MEMSIZE_VIRTUAL - PAGESIZE) {
+		return -1;
+	}
+
+	// handle unmap on contraction
+	if (newbrk < oldbrk) {
+		// TODO
+		for (int va = oldbrk; va > newbrk; va -= PAGESIZE) {
+			uintptr_t vamap = virtual_memory_lookup(p->p_pagetable, va);
+			if (vamap.pn != -1){
+				virtual_memory_map(p->p_pagetable, va, PAGEADDRESS(vamap.pn),  PAGESIZE, 0);
+				pageinfo[vamap.pn].recount--;
+				if (pageinfo[vamap.pn].refcount == 0)
+					pageinfo[vamap.pn].owner = PO_FREE;
+			}
+		}
+	}
+
+	p->program_break = addr;
+	return 0;	
 }
 
-int sbrk(proc * p, intptr_t difference) {
-    // TODO : Your code here
-    return 0;
+
+int sbrk(proc *p, intptr_t difference) {
+    // TODO : Your code here -> done
+    if (brk(p, p->program_break + difference)) {
+	    return NULL;
+    }
+    return p->program_break - difference;
 }
 
 
@@ -299,12 +322,14 @@ void exception(x86_64_registers* reg) {
         case INT_SYS_BRK:
             {
                 // TODO : Your code here
+		reg->rax = brk(current, reg->reg_rdi);
 		break;
             }
 
         case INT_SYS_SBRK:
             {
                 // TODO : Your code here
+		reg->rax = sbrk(current, reg->reg_rdi);
                 break;
             }
 	case INT_SYS_PAGE_ALLOC:
@@ -330,20 +355,35 @@ void exception(x86_64_registers* reg) {
             {
                 // Analyze faulting address and access type.
                 uintptr_t addr = rcr2();
-                const char* operation = reg->reg_err & PFERR_WRITE
-                    ? "write" : "read";
-                const char* problem = reg->reg_err & PFERR_PRESENT
-                    ? "protection problem" : "missing page";
+		// unsure if second check is redundant?
+		if (//reg->reg_err != PFERR_PRESENT 
+		    //&& 
+		    addr >= current->original_break && addr < current->program_break) {
+			uintptr_t pa = palloc(current->p_pid);
+			if (allocd_page) {
+				pageinfo[PAGENUMBER(pa)].owner = current->p_pid;
+				pageinfo[PAGENUMBER(pa)].refcount++;
+				virtual_memory_map(current->p_pagetable, PAGEADDRESS(PAGENUMBER(addr)), pa, PAGESIZE, PTE_P | PTE_U | PTE_W);
+			} 
+			else {
+				syscall_exit();
+			}
+		} else {
+			const char* operation = reg->reg_err & PFERR_WRITE
+			    ? "write" : "read";
+			const char* problem = reg->reg_err & PFERR_PRESENT
+			    ? "protection problem" : "missing page";
 
-                if (!(reg->reg_err & PFERR_USER)) {
-                    kernel_panic("Kernel page fault for %p (%s %s, rip=%p)!\n",
-                            addr, operation, problem, reg->reg_rip);
-                }
-                console_printf(CPOS(24, 0), 0x0C00,
-                        "Process %d page fault for %p (%s %s, rip=%p)!\n",
-                        current->p_pid, addr, operation, problem, reg->reg_rip);
-                current->p_state = P_BROKEN;
-                syscall_exit();
+			if (!(reg->reg_err & PFERR_USER)) {
+			    kernel_panic("Kernel page fault for %p (%s %s, rip=%p)!\n",
+				    addr, operation, problem, reg->reg_rip);
+			}
+			console_printf(CPOS(24, 0), 0x0C00,
+				"Process %d page fault for %p (%s %s, rip=%p)!\n",
+				current->p_pid, addr, operation, problem, reg->reg_rip);
+			current->p_state = P_BROKEN;
+			syscall_exit();
+		}
                 break;
             }
 

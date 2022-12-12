@@ -110,7 +110,12 @@ static int program_load_segment(proc* p, const elf_program* ph,
         }
     }
     // TODO : Add code here -> done
-    p->original_break += (ph->p_va + ph->p_memsz + (PAGESIZE - 1)) & ~(PAGESIZE - 1);
+    if (p->original_break == 0)
+	    p->original_break = PROC_START_ADDR;
+
+    // log_printf("heap bottom/top before loading this segment: 0x%x\n", p->original_break);
+    p->original_break = (ph->p_va + ph->p_memsz + (PAGESIZE - 1)) & ~(PAGESIZE - 1);
     p->program_break = p->original_break;
+    // log_printf("heap bottom/top after loading this segment: 0x%x\n", p->original_break);
     return 0;
 }

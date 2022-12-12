@@ -162,22 +162,23 @@ int syscall_page_alloc(uintptr_t addr) {
 # define PAGE_ALIGN(addr) (PAGEADDRESS(PAGENUMBER(addr)))
 
 int brk(proc *p, uintptr_t addr) {
-	newbrk = PAGE_ALIGN(addr);
-	oldbrk = PAGE_ALIGN(p->program_break);
+	uintptr_t newbrk = PAGE_ALIGN(addr);
+	uintptr_t oldbrk = PAGE_ALIGN(p->program_break);
 
 	// error checking on break values
 	if (newbrk < p->original_break || newbrk >= MEMSIZE_VIRTUAL - PAGESIZE) {
+		p->p_registers.reg_rax = 0;
 		return -1;
 	}
 
 	// handle unmap on contraction
 	if (newbrk < oldbrk) {
 		// TODO
-		for (int va = oldbrk; va > newbrk; va -= PAGESIZE) {
-			uintptr_t vamap = virtual_memory_lookup(p->p_pagetable, va);
+		for (uintptr_t va = oldbrk; va > newbrk; va -= PAGESIZE) {
+			vamapping vamap = virtual_memory_lookup(p->p_pagetable, va);
 			if (vamap.pn != -1){
 				virtual_memory_map(p->p_pagetable, va, PAGEADDRESS(vamap.pn),  PAGESIZE, 0);
-				pageinfo[vamap.pn].recount--;
+				pageinfo[vamap.pn].refcount--;
 				if (pageinfo[vamap.pn].refcount == 0)
 					pageinfo[vamap.pn].owner = PO_FREE;
 			}
@@ -185,16 +186,20 @@ int brk(proc *p, uintptr_t addr) {
 	}
 
 	p->program_break = addr;
+	p->p_registers.reg_rax = 0;
 	return 0;	
 }
 
 
 int sbrk(proc *p, intptr_t difference) {
+	// log_printf("sbrk was used\n");
     // TODO : Your code here -> done
+    uintptr_t oldbrk = p->program_break;
     if (brk(p, p->program_break + difference)) {
-	    return NULL;
+	    return -1;
     }
-    return p->program_break - difference;
+    p->p_registers.reg_rax = oldbrk;
+    return 0;
 }
 
 
@@ -322,14 +327,14 @@ void exception(x86_64_registers* reg) {
         case INT_SYS_BRK:
             {
                 // TODO : Your code here
-		reg->rax = brk(current, reg->reg_rdi);
+		reg->reg_rax = brk(current, reg->reg_rdi);
 		break;
             }
 
         case INT_SYS_SBRK:
             {
                 // TODO : Your code here
-		reg->rax = sbrk(current, reg->reg_rdi);
+		reg->reg_rax = sbrk(current, reg->reg_rdi);
                 break;
             }
 	case INT_SYS_PAGE_ALLOC:
@@ -355,14 +360,15 @@ void exception(x86_64_registers* reg) {
             {
                 // Analyze faulting address and access type.
                 uintptr_t addr = rcr2();
+		    // log_printf("\tpagefault at: 0x%x\n", addr);
+		    // log_printf("\theap bottom: 0x%x\n", current->original_break);
+		    // log_printf("\theap top: 0x%x\n", current->program_break);
 		// unsure if second check is redundant?
 		if (//reg->reg_err != PFERR_PRESENT 
 		    //&& 
 		    addr >= current->original_break && addr < current->program_break) {
-			uintptr_t pa = palloc(current->p_pid);
-			if (allocd_page) {
-				pageinfo[PAGENUMBER(pa)].owner = current->p_pid;
-				pageinfo[PAGENUMBER(pa)].refcount++;
+			uintptr_t pa = (uintptr_t) palloc(current->p_pid);
+			if (pa) {
 				virtual_memory_map(current->p_pagetable, PAGEADDRESS(PAGENUMBER(addr)), pa, PAGESIZE, PTE_P | PTE_U | PTE_W);
 			} 
 			else {

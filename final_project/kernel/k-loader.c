@@ -110,5 +110,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
         }
     }
     // TODO : Add code here
+    p->original_break += ph->p_va + ph->p_memsz;
+    p->program_break = p->original_break;
     return 0;
 }

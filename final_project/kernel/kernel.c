@@ -159,15 +159,15 @@ int syscall_page_alloc(uintptr_t addr) {
 
 // PAGE_ALIGN aligns to nearest page with addr >= input
 
-# define PAGE_ALIGN(addr) (PAGEADDRESS(PAGENUMBER(addr + (1 << (PAGEOFFBITS - 1)))))
+# define PAGE_ALIGN(addr) ((addr + (PAGESIZE - 1)) & (PAGESIZE - 1))
 
 int brk(proc *p, uintptr_t addr) {
 	newbrk = PAGE_ALIGN(addr);
 	oldbrk = PAGE_ALIGN(p->program_break);
 	
+	if (newbrk < )
 	return 0;
 }
-
 
 int sbrk(proc * p, intptr_t difference) {
     // TODO : Your code here

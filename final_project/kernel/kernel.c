@@ -166,7 +166,7 @@ int brk(proc *p, uintptr_t addr) {
 	uintptr_t oldbrk = PAGE_ALIGN(p->program_break);
 
 	// error checking on break values
-	if (newbrk < p->original_break || newbrk >= MEMSIZE_VIRTUAL - PAGESIZE) {
+	if (newbrk < p->original_break || newbrk > MEMSIZE_VIRTUAL - PAGESIZE) {
 		p->p_registers.reg_rax = 0;
 		return -1;
 	}

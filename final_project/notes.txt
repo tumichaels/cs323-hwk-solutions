@@ -24,3 +24,19 @@ https://stackoverflow.com/questions/65440115/does-brk-and-sbrk-round-the-program
     a. target below heap start address
     b. target inside already used memory, ie mmapped region or stack
         i. extra note, i think mmap will default to a place away from both
+
+
+
+========================================  Part 2  ========================================  
+
+1. we're going to be copying large parts of this from the canvas files
+
+2. first thing we're going to make is the header
+    - the header is 16 bytes, we're also going to follow the four 16 byte word strategy
+    - we may be able to get away with less
+
+3. we have also implemented the footer
+
+4. as a side note, you have to remember to always malloc a minimum of 4 words (might be 3)
+
+5. we'll extend by 1/2 a page each time there's no space

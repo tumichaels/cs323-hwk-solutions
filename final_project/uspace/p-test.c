@@ -17,26 +17,27 @@ void process_main(void) {
     heap_bottom = heap_top = ROUNDUP((uint8_t*) end, PAGESIZE);
     stack_bottom = ROUNDDOWN((uint8_t*) read_rsp() - 1, PAGESIZE);
 
-    // /* Single elements on heap of varying sizes */
-    // for(int i = 1; i < 64; ++i) {
-    //     for(int j = 1; j < 64; ++j) {
-    //         void *ptr = calloc(i,j);
-    //         assert(ptr != NULL);
+    /* Single elements on heap of varying sizes */
+    for(int i = 1; i < 64; ++i) {
+        for(int j = 1; j < 64; ++j) {
+            void *ptr = calloc(i,j);
+            assert(ptr != NULL);
 
-    //         for(int k = 0; k < i*j; ++k) {
-    //             assert(((char *)ptr)[k] == 0);
-    //         }
+            for(int k = 0; k < i*j; ++k) {
+                assert(((char *)ptr)[k] == 0);
+            }
 
-    //         free(ptr);
-    //     }
-    //     defrag();
-    // }
-    //
+            free(ptr);
+        }
+        defrag();
+    }
+    
 
 //     void *ptr = malloc(64);
 //     free(ptr);
-//     ptr = malloc(64);
-//     if (ptr == (void*)0x103030)
+//     defrag();
+// 	
+//     if (*((size_t *)((uintptr_t)ptr - 16)) == (1<<14))
 // 	    panic("success!");
 
     TEST_PASS();

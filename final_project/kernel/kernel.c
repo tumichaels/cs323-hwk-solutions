@@ -167,13 +167,12 @@ int brk(proc *p, uintptr_t addr) {
 
 	// error checking on break values
 	if (newbrk < p->original_break || newbrk > MEMSIZE_VIRTUAL - PAGESIZE) {
-		p->p_registers.reg_rax = 0;
+		p->p_registers.reg_rax = -1;
 		return -1;
 	}
 
 	// handle unmap on contraction
 	if (newbrk < oldbrk) {
-		// TODO
 		for (uintptr_t va = oldbrk; va > newbrk; va -= PAGESIZE) {
 			vamapping vamap = virtual_memory_lookup(p->p_pagetable, va);
 			if (vamap.pn != -1){
@@ -196,6 +195,8 @@ int sbrk(proc *p, intptr_t difference) {
     // TODO : Your code here -> done
     uintptr_t oldbrk = p->program_break;
     if (brk(p, p->program_break + difference)) {
+		p->p_registers.reg_rax = -1;
+		log_printf("oops got here\n");
 	    return -1;
     }
     p->p_registers.reg_rax = oldbrk;

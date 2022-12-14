@@ -19,8 +19,10 @@
 #define HDRP(bp) ((char *) (bp) - sizeof(block_header))
 #define NEXT_BLKP(bp) ((char *) (bp) + GET_SIZE(HDRP(bp)))
 
+// you'll use these on payload pointers, but they're only meaninigufl on free pointers
 #define FTRP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp)) - sizeof(block_header) - sizeof(block_footer))
-#define PREV_BLKP(bp) ((char *)(bp) - GET_SIZE((char *)(bp) - OVERHEAD))
+#define PREV_BLKP(bp) ((char*)(bp) - GET_SIZE(HDRP(bp) - sizeof(block_footer)))
+
 
 // macros for working with a free pointer <-- free pointers are payload pointers
 //	do i really need this double cast?
@@ -29,7 +31,6 @@
 
 int initialized_heap;
 
-void *prologue_block;
 void *free_list;
 
 typedef struct {
@@ -49,6 +50,7 @@ typedef struct {
 void heap_init(void) {
 
 	// prologue block
+	void *prologue_block;
 	sbrk(sizeof(block_header));
 	prologue_block = sbrk(sizeof(block_footer));
 
@@ -77,6 +79,7 @@ void free(void *firstbyte) {
 	GET_SIZE(FTRP(firstbyte)) = GET_SIZE(HDRP(firstbyte));
 
 	// add to free_list
+	PREV_FPTR(free_list) = firstbyte;
 	free_list = firstbyte;
 
 	return;
@@ -98,7 +101,7 @@ void extend(size_t new_size) {
 	GET_ALLOC(HDRP(bp)) = 0;
 	NEXT_FPTR(bp) = free_list;	
 	PREV_FPTR(bp) = NULL;
-	GET_SIZE(FTRP(bp)) = chunk_aligned_size;
+	GET_SIZE(FTRP(bp)) = GET_SIZE(HDRP(bp));
 
 	// add to head of free_list
 	if (free_list)
@@ -121,12 +124,9 @@ void set_allocated(void *bp, size_t size) {
 
 		GET_SIZE(HDRP(leftover_mem_ptr)) = extra_size;
 		GET_ALLOC(HDRP(leftover_mem_ptr)) = 0;
-
-		// add pointers to previous and next free block
-		NEXT_FPTR(leftover_mem_ptr) = NEXT_FPTR(bp);
+		NEXT_FPTR(leftover_mem_ptr) = NEXT_FPTR(bp); // pointers to the nearby free blocks
 		PREV_FPTR(leftover_mem_ptr) = PREV_FPTR(bp);
-	
-		GET_SIZE(FTRP(leftover_mem_ptr)) = extra_size;
+		GET_SIZE(FTRP(leftover_mem_ptr)) = GET_SIZE(HDRP(leftover_mem_ptr));
 
 		// update the free list
 		if (free_list == bp)
@@ -136,7 +136,7 @@ void set_allocated(void *bp, size_t size) {
 			NEXT_FPTR(PREV_FPTR(bp)) = leftover_mem_ptr; // this the free block that went to bp
 		if (NEXT_FPTR(bp))
 			PREV_FPTR(NEXT_FPTR(bp)) = leftover_mem_ptr; // this is the free block that came from bp
-		
+								    
 	}
 	else {
 		// update the free list
@@ -175,22 +175,77 @@ void *malloc(uint64_t numbytes) {
 
 	// no preexisting space big enough, so only space is at top of stack
 	bp = sbrk(0);
+	if (bp == (void *)0xffffffffffffffef){
+		panic("I'm panicking");
+		return NULL;}
 	extend(aligned_size);
 	set_allocated(bp, aligned_size);
     return bp;
 }
 
 void *calloc(uint64_t num, uint64_t sz) {
-    return 0;
+	void *bp = malloc(num * sz);
+	memset(bp, 0, num * sz);
+	return bp;
 }
 
-void *realloc(void * ptr, uint64_t sz) {
-    return 0;
+void *realloc(void *ptr, uint64_t sz) {
+	// first check if there's enough space in the block already
+	if (GET_SIZE(HDRP(ptr)) >= sz)
+		return ptr;
+
+	// else find or add a big enough block, which is what malloc does
+	void *bigger_ptr = malloc(sz);
+	memcpy(bigger_ptr, ptr, GET_SIZE(HDRP(ptr)));
+	free(ptr);
+
+    return bigger_ptr;
 }
 
 void defrag() {
+	void *fp = free_list;
+	while (fp != NULL) {
+		// is the block after me free		
+		void *next_block = NEXT_BLKP(fp);
+		if (!GET_ALLOC(HDRP(next_block))) {
+			if (free_list == next_block)
+				free_list = NEXT_FPTR(next_block);
+
+			if (PREV_FPTR(next_block)) 
+				NEXT_FPTR(PREV_FPTR(next_block)) = NEXT_FPTR(next_block);
+
+			if (NEXT_FPTR(next_block)) 
+				PREV_FPTR(NEXT_FPTR(next_block)) = PREV_FPTR(next_block);
+
+			GET_SIZE(HDRP(fp)) = GET_SIZE(HDRP(fp)) + GET_SIZE(HDRP(next_block));
+			GET_SIZE(FTRP(fp)) = GET_SIZE(HDRP(fp));
+		}
+
+		void *prev_block = PREV_BLKP(fp);
+		// this is an error check to prevent against sparse arrays
+		if (GET_SIZE(HDRP(prev_block)) != GET_SIZE(FTRP(prev_block))){
+			fp = NEXT_FPTR(fp);
+			continue;
+		}
+
+		if (!GET_ALLOC(HDRP(prev_block))) {
+			if (free_list == fp)
+				free_list = NEXT_FPTR(fp);
+
+			if (PREV_FPTR(fp)) 
+				NEXT_FPTR(PREV_FPTR(fp)) = NEXT_FPTR(fp);
+
+			if (NEXT_FPTR(fp)) 
+				PREV_FPTR(NEXT_FPTR(fp)) = PREV_FPTR(fp);
+
+			GET_SIZE(HDRP(prev_block)) = GET_SIZE(HDRP(prev_block)) + GET_SIZE(HDRP(fp));
+			GET_SIZE(FTRP(prev_block)) = GET_SIZE(HDRP(prev_block));
+		}
+
+		fp = NEXT_FPTR(fp);
+	}
 }
 
-int heap_info(heap_info_struct * info) {
+int heap_info(heap_info_struct *info) {
     return 0;
 }

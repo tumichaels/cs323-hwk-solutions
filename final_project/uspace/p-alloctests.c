@@ -20,6 +20,7 @@ void process_main(void) {
     // realloc array to size 20
     array = (int*)realloc(array, sizeof(int) * 20);
 
+
     // check if contents are same
     for(int i = 0 ; i < 10 ; i++){
 	assert(array[i] == i);

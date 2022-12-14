@@ -48,3 +48,17 @@ https://stackoverflow.com/questions/65440115/does-brk-and-sbrk-round-the-program
     - total = 48 bytes -- 16 header, 32 useable space
 
 7. this also implies "useable" size will always >= 32
+
+8. a note about the number of pages used, and I why I think it is correct. recall from before:
+    1. the pagetable takes 5 pages
+    2. the code takes 2 pages
+    3. the stack takes 1 page
+    4. what is the last page for? (not sure, but it's supposed to be there)
+
+    - therefore, there are 9 pages of memory used off the bat.
+    - with malloc, we initialize on a page, and write on the very last page, since the first
+      thing we return from malloc is near to the bottom of the heap, you don't expect there
+      to be a nother page used for it. Therefore, thanks to lazy allocation, we should have
+      11 pages mapped in physical memory to start.
+        - 1 additional page for heap init,
+        - 1 additional page that we wrote to which marks the end fo the heap 

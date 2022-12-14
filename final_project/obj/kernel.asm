@@ -726,12 +726,12 @@ int brk(proc *p, uintptr_t addr) {
    404aa:	48 89 45 e8          	mov    %rax,-0x18(%rbp)
 
 	// error checking on break values
-	if (newbrk < p->original_break || newbrk >= MEMSIZE_VIRTUAL - PAGESIZE) {
+	if (newbrk < p->original_break || newbrk > MEMSIZE_VIRTUAL - PAGESIZE) {
    404ae:	48 8b 45 c8          	mov    -0x38(%rbp),%rax
    404b2:	48 8b 40 10          	mov    0x10(%rax),%rax
    404b6:	48 39 45 f0          	cmp    %rax,-0x10(%rbp)
    404ba:	72 0a                	jb     404c6 <brk+0x50>
-   404bc:	48 81 7d f0 ff ef 2f 	cmpq   $0x2fefff,-0x10(%rbp)
+   404bc:	48 81 7d f0 00 f0 2f 	cmpq   $0x2ff000,-0x10(%rbp)
    404c3:	00 
    404c4:	76 16                	jbe    404dc <brk+0x66>
 		p->p_registers.reg_rax = 0;

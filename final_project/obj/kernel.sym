@@ -1,7 +1,7 @@
-0000000000001a20 A _binary_obj_p_malloc_size
+0000000000001c10 A _binary_obj_p_malloc_size
 0000000000001c38 A _binary_obj_p_allocator_size
-0000000000001d70 A _binary_obj_p_test_size
-0000000000001dd8 A _binary_obj_p_alloctests_size
+0000000000001ed0 A _binary_obj_p_test_size
+0000000000001fc8 A _binary_obj_p_alloctests_size
 0000000000040000 T entry_from_boot
 000000000004002e T gpf_int_handler
 0000000000040032 T pagefault_int_handler
@@ -124,11 +124,11 @@
 0000000000046060 D _binary_obj_p_allocator_start
 0000000000047c98 D _binary_obj_p_allocator_end
 0000000000047c98 D _binary_obj_p_malloc_start
-00000000000496b8 D _binary_obj_p_alloctests_start
-00000000000496b8 D _binary_obj_p_malloc_end
-000000000004b490 D _binary_obj_p_alloctests_end
-000000000004b490 D _binary_obj_p_test_start
-000000000004d200 D _binary_obj_p_test_end
+00000000000498a8 D _binary_obj_p_alloctests_start
+00000000000498a8 D _binary_obj_p_malloc_end
+000000000004b870 D _binary_obj_p_alloctests_end
+000000000004b870 D _binary_obj_p_test_start
+000000000004d740 D _binary_obj_p_test_end
 000000000004e000 B processes
 000000000004ef00 B current
 000000000004ef20 B pageinfo

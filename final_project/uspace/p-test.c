@@ -33,9 +33,11 @@ void process_main(void) {
     // }
     //
 
-    void *ptr = malloc(64);
-    if (ptr == (void*)0x103060)
-	    panic("success!");
+//     void *ptr = malloc(64);
+//     free(ptr);
+//     ptr = malloc(64);
+//     if (ptr == (void*)0x103030)
+// 	    panic("success!");
 
     TEST_PASS();
 }

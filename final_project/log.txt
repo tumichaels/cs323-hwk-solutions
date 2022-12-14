@@ -1,1 +1,3 @@
-PANIC: huh
+PANIC: PANIC: uspace/p-allocator.c: TEST PASS
+PANIC: success!
+PANIC: success!

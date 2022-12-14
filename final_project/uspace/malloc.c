@@ -67,6 +67,18 @@ void heap_init(void) {
 }
 
 void free(void *firstbyte) {
+	if (firstbyte == NULL)
+		return;
+
+	// setup free things: alloc, list ptrs, footer
+	GET_ALLOC(HDRP(firstbyte)) = 0;
+	NEXT_FPTR(firstbyte) = free_list;
+	PREV_FPTR(firstbyte) = NULL;
+	GET_SIZE(FTRP(firstbyte)) = GET_SIZE(HDRP(firstbyte));
+
+	// add to free_list
+	free_list = firstbyte;
+
 	return;
 }
 
@@ -96,7 +108,6 @@ void extend(size_t new_size) {
 	// update terminal block
 	GET_SIZE(HDRP(NEXT_BLKP(bp))) = 0;
 	GET_ALLOC(HDRP(NEXT_BLKP(bp))) = 1;
-	panic("huh");
 }
 
 // remember all the sizes are always aligned, so I should be safe
@@ -117,14 +128,21 @@ void set_allocated(void *bp, size_t size) {
 	
 		GET_SIZE(FTRP(leftover_mem_ptr)) = extra_size;
 
-		// update the pointers in previous and next free block to the leftover, as long as they aren't null
+		// update the free list
+		if (free_list == bp)
+			free_list = leftover_mem_ptr;
+
 		if (PREV_FPTR(bp))
 			NEXT_FPTR(PREV_FPTR(bp)) = leftover_mem_ptr; // this the free block that went to bp
 		if (NEXT_FPTR(bp))
 			PREV_FPTR(NEXT_FPTR(bp)) = leftover_mem_ptr; // this is the free block that came from bp
+		
 	}
 	else {
-		// remove this segement of the list entirely
+		// update the free list
+		if (free_list == bp)
+			free_list = NEXT_FPTR(bp);
+
 		if (PREV_FPTR(bp))
 			NEXT_FPTR(PREV_FPTR(bp)) = NEXT_FPTR(bp);
 		if (NEXT_FPTR(bp))
@@ -156,7 +174,7 @@ void *malloc(uint64_t numbytes) {
 	}
 
 	// no preexisting space big enough, so only space is at top of stack
-	bp = sbrk(0) - OVERHEAD;
+	bp = sbrk(0);
 	extend(aligned_size);
 	set_allocated(bp, aligned_size);
     return bp;

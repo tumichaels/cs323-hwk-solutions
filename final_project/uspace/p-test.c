@@ -33,8 +33,8 @@ void process_main(void) {
     // }
     //
 
-    void *ptr = malloc(10);
-    if (*((size_t *)(0x103010)) == 32)
+    void *ptr = malloc(64);
+    if (ptr == (void*)0x103060)
 	    panic("success!");
 
     TEST_PASS();

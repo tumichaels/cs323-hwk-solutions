@@ -414,7 +414,7 @@ void kernel(const char* command) {
     memset(processes, 0, sizeof(processes));
    4018c:	ba 00 0f 00 00       	mov    $0xf00,%edx
    40191:	be 00 00 00 00       	mov    $0x0,%esi
-   40196:	bf 00 e0 04 00       	mov    $0x4e000,%edi
+   40196:	bf 00 f0 04 00       	mov    $0x4f000,%edi
    4019b:	e8 07 3b 00 00       	call   43ca7 <memset>
     for (pid_t i = 0; i < NPROC; i++) {
    401a0:	c7 45 fc 00 00 00 00 	movl   $0x0,-0x4(%rbp)
@@ -426,7 +426,7 @@ void kernel(const char* command) {
    401b2:	48 c1 e0 04          	shl    $0x4,%rax
    401b6:	48 29 d0             	sub    %rdx,%rax
    401b9:	48 c1 e0 04          	shl    $0x4,%rax
-   401bd:	48 8d 90 00 e0 04 00 	lea    0x4e000(%rax),%rdx
+   401bd:	48 8d 90 00 f0 04 00 	lea    0x4f000(%rax),%rdx
    401c4:	8b 45 fc             	mov    -0x4(%rbp),%eax
    401c7:	89 02                	mov    %eax,(%rdx)
         processes[i].p_state = P_FREE;
@@ -436,7 +436,7 @@ void kernel(const char* command) {
    401d2:	48 c1 e0 04          	shl    $0x4,%rax
    401d6:	48 29 d0             	sub    %rdx,%rax
    401d9:	48 c1 e0 04          	shl    $0x4,%rax
-   401dd:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   401dd:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    401e3:	c7 00 00 00 00 00    	movl   $0x0,(%rax)
     for (pid_t i = 0; i < NPROC; i++) {
    401e9:	83 45 fc 01          	addl   $0x1,-0x4(%rbp)
@@ -518,7 +518,7 @@ void kernel(const char* command) {
 
     // Switch to the first process using run()
     run(&processes[1]);
-   402cc:	bf f0 e0 04 00       	mov    $0x4e0f0,%edi
+   402cc:	bf f0 f0 04 00       	mov    $0x4f0f0,%edi
    402d1:	e8 2b 09 00 00       	call   40c01 <run>
 
 00000000000402d6 <process_setup>:
@@ -540,7 +540,7 @@ void process_setup(pid_t pid, int program_number) {
    402ed:	48 c1 e0 04          	shl    $0x4,%rax
    402f1:	48 29 d0             	sub    %rdx,%rax
    402f4:	48 c1 e0 04          	shl    $0x4,%rax
-   402f8:	48 05 00 e0 04 00    	add    $0x4e000,%rax
+   402f8:	48 05 00 f0 04 00    	add    $0x4f000,%rax
    402fe:	be 00 00 00 00       	mov    $0x0,%esi
    40303:	48 89 c7             	mov    %rax,%rdi
    40306:	e8 8b 1a 00 00       	call   41d96 <process_init>
@@ -563,7 +563,7 @@ void process_setup(pid_t pid, int program_number) {
    40336:	48 c1 e0 04          	shl    $0x4,%rax
    4033a:	48 29 d0             	sub    %rdx,%rax
    4033d:	48 c1 e0 04          	shl    $0x4,%rax
-   40341:	48 8d 90 00 e0 04 00 	lea    0x4e000(%rax),%rdx
+   40341:	48 8d 90 00 f0 04 00 	lea    0x4f000(%rax),%rdx
    40348:	8b 45 f8             	mov    -0x8(%rbp),%eax
    4034b:	89 c6                	mov    %eax,%esi
    4034d:	48 89 d7             	mov    %rdx,%rdi
@@ -582,7 +582,7 @@ void process_setup(pid_t pid, int program_number) {
    40376:	48 c1 e0 04          	shl    $0x4,%rax
    4037a:	48 29 d0             	sub    %rdx,%rax
    4037d:	48 c1 e0 04          	shl    $0x4,%rax
-   40381:	48 05 00 e0 04 00    	add    $0x4e000,%rax
+   40381:	48 05 00 f0 04 00    	add    $0x4f000,%rax
    40387:	48 89 c7             	mov    %rax,%rdi
    4038a:	e8 67 34 00 00       	call   437f6 <process_setup_stack>
 
@@ -593,7 +593,7 @@ void process_setup(pid_t pid, int program_number) {
    40398:	48 c1 e0 04          	shl    $0x4,%rax
    4039c:	48 29 d0             	sub    %rdx,%rax
    4039f:	48 c1 e0 04          	shl    $0x4,%rax
-   403a3:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   403a3:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    403a9:	c7 00 01 00 00 00    	movl   $0x1,(%rax)
 }
    403af:	90                   	nop
@@ -626,7 +626,7 @@ int assign_physical_page(uintptr_t addr, int8_t owner) {
    403db:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
    403df:	48 c1 e8 0c          	shr    $0xc,%rax
    403e3:	48 98                	cltq   
-   403e5:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   403e5:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    403ec:	00 
    403ed:	84 c0                	test   %al,%al
    403ef:	74 07                	je     403f8 <assign_physical_page+0x46>
@@ -638,14 +638,14 @@ int assign_physical_page(uintptr_t addr, int8_t owner) {
    403f8:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
    403fc:	48 c1 e8 0c          	shr    $0xc,%rax
    40400:	48 98                	cltq   
-   40402:	c6 84 00 21 ef 04 00 	movb   $0x1,0x4ef21(%rax,%rax,1)
+   40402:	c6 84 00 21 ff 04 00 	movb   $0x1,0x4ff21(%rax,%rax,1)
    40409:	01 
         pageinfo[PAGENUMBER(addr)].owner = owner;
    4040a:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
    4040e:	48 c1 e8 0c          	shr    $0xc,%rax
    40412:	48 98                	cltq   
    40414:	0f b6 55 f4          	movzbl -0xc(%rbp),%edx
-   40418:	88 94 00 20 ef 04 00 	mov    %dl,0x4ef20(%rax,%rax,1)
+   40418:	88 94 00 20 ff 04 00 	mov    %dl,0x4ff20(%rax,%rax,1)
         return 0;
    4041f:	b8 00 00 00 00       	mov    $0x0,%eax
     }
@@ -659,7 +659,7 @@ pid_t syscall_fork() {
    40426:	55                   	push   %rbp
    40427:	48 89 e5             	mov    %rsp,%rbp
     return process_fork(current);
-   4042a:	48 8b 05 cf ea 00 00 	mov    0xeacf(%rip),%rax        # 4ef00 <current>
+   4042a:	48 8b 05 cf fa 00 00 	mov    0xfacf(%rip),%rax        # 4ff00 <current>
    40431:	48 89 c7             	mov    %rax,%rdi
    40434:	e8 70 34 00 00       	call   438a9 <process_fork>
 }
@@ -673,7 +673,7 @@ void syscall_exit() {
    4043b:	55                   	push   %rbp
    4043c:	48 89 e5             	mov    %rsp,%rbp
     process_free(current->p_pid);
-   4043f:	48 8b 05 ba ea 00 00 	mov    0xeaba(%rip),%rax        # 4ef00 <current>
+   4043f:	48 8b 05 ba fa 00 00 	mov    0xfaba(%rip),%rax        # 4ff00 <current>
    40446:	8b 00                	mov    (%rax),%eax
    40448:	89 c7                	mov    %eax,%edi
    4044a:	e8 3f 2d 00 00       	call   4318e <process_free>
@@ -690,7 +690,7 @@ int syscall_page_alloc(uintptr_t addr) {
    40456:	48 83 ec 10          	sub    $0x10,%rsp
    4045a:	48 89 7d f8          	mov    %rdi,-0x8(%rbp)
     return process_page_alloc(current, addr);
-   4045e:	48 8b 05 9b ea 00 00 	mov    0xea9b(%rip),%rax        # 4ef00 <current>
+   4045e:	48 8b 05 9b fa 00 00 	mov    0xfa9b(%rip),%rax        # 4ff00 <current>
    40465:	48 8b 55 f8          	mov    -0x8(%rbp),%rdx
    40469:	48 89 d6             	mov    %rdx,%rsi
    4046c:	48 89 c7             	mov    %rax,%rdi
@@ -779,22 +779,22 @@ int brk(proc *p, uintptr_t addr) {
 				pageinfo[vamap.pn].refcount--;
    4054b:	8b 45 d0             	mov    -0x30(%rbp),%eax
    4054e:	48 63 d0             	movslq %eax,%rdx
-   40551:	0f b6 94 12 21 ef 04 	movzbl 0x4ef21(%rdx,%rdx,1),%edx
+   40551:	0f b6 94 12 21 ff 04 	movzbl 0x4ff21(%rdx,%rdx,1),%edx
    40558:	00 
    40559:	83 ea 01             	sub    $0x1,%edx
    4055c:	48 98                	cltq   
-   4055e:	88 94 00 21 ef 04 00 	mov    %dl,0x4ef21(%rax,%rax,1)
+   4055e:	88 94 00 21 ff 04 00 	mov    %dl,0x4ff21(%rax,%rax,1)
 				if (pageinfo[vamap.pn].refcount == 0)
    40565:	8b 45 d0             	mov    -0x30(%rbp),%eax
    40568:	48 98                	cltq   
-   4056a:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   4056a:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    40571:	00 
    40572:	84 c0                	test   %al,%al
    40574:	75 0d                	jne    40583 <brk+0x10d>
 					pageinfo[vamap.pn].owner = PO_FREE;
    40576:	8b 45 d0             	mov    -0x30(%rbp),%eax
    40579:	48 98                	cltq   
-   4057b:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   4057b:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    40582:	00 
 		for (uintptr_t va = oldbrk; va > newbrk; va -= PAGESIZE) {
    40583:	48 81 6d f8 00 10 00 	subq   $0x1000,-0x8(%rbp)
@@ -1022,7 +1022,7 @@ void exception(x86_64_registers* reg) {
     // Copy the saved registers into the `current` process descriptor
     // and always use the kernel's page table.
     current->p_registers = *reg;
-   40789:	48 8b 05 70 e7 00 00 	mov    0xe770(%rip),%rax        # 4ef00 <current>
+   40789:	48 8b 05 70 f7 00 00 	mov    0xf770(%rip),%rax        # 4ff00 <current>
    40790:	48 8b 95 08 ff ff ff 	mov    -0xf8(%rbp),%rdx
    40797:	48 83 c0 18          	add    $0x18,%rax
    4079b:	48 89 d6             	mov    %rdx,%rsi
@@ -1031,7 +1031,7 @@ void exception(x86_64_registers* reg) {
    407a6:	48 89 d1             	mov    %rdx,%rcx
    407a9:	f3 48 a5             	rep movsq %ds:(%rsi),%es:(%rdi)
     set_pagetable(kernel_pagetable);
-   407ac:	48 8b 05 4d 08 01 00 	mov    0x1084d(%rip),%rax        # 51000 <kernel_pagetable>
+   407ac:	48 8b 05 4d 18 01 00 	mov    0x1184d(%rip),%rax        # 52000 <kernel_pagetable>
    407b3:	48 89 c7             	mov    %rax,%rdi
    407b6:	e8 77 1f 00 00       	call   42732 <set_pagetable>
     // Events logged this way are stored in the host's `log.txt` file.
@@ -1093,7 +1093,7 @@ void exception(x86_64_registers* reg) {
                 {
                     char msg[160];
                     uintptr_t addr = current->p_registers.reg_rdi;
-   4084b:	48 8b 05 ae e6 00 00 	mov    0xe6ae(%rip),%rax        # 4ef00 <current>
+   4084b:	48 8b 05 ae f6 00 00 	mov    0xf6ae(%rip),%rax        # 4ff00 <current>
    40852:	48 8b 40 48          	mov    0x48(%rax),%rax
    40856:	48 89 45 f0          	mov    %rax,-0x10(%rbp)
                     if((void *)addr == NULL)
@@ -1104,7 +1104,7 @@ void exception(x86_64_registers* reg) {
    40866:	b8 00 00 00 00       	mov    $0x0,%eax
    4086b:	e8 14 1c 00 00       	call   42484 <kernel_panic>
                     vamapping map = virtual_memory_lookup(current->p_pagetable, addr);
-   40870:	48 8b 05 89 e6 00 00 	mov    0xe689(%rip),%rax        # 4ef00 <current>
+   40870:	48 8b 05 89 f6 00 00 	mov    0xf689(%rip),%rax        # 4ff00 <current>
    40877:	48 8b 88 e0 00 00 00 	mov    0xe0(%rax),%rcx
    4087e:	48 8d 45 b0          	lea    -0x50(%rbp),%rax
    40882:	48 8b 55 f0          	mov    -0x10(%rbp),%rdx
@@ -1130,9 +1130,9 @@ void exception(x86_64_registers* reg) {
         case INT_SYS_GETPID:
             {
                 current->p_registers.reg_rax = current->p_pid;
-   408c3:	48 8b 05 36 e6 00 00 	mov    0xe636(%rip),%rax        # 4ef00 <current>
+   408c3:	48 8b 05 36 f6 00 00 	mov    0xf636(%rip),%rax        # 4ff00 <current>
    408ca:	8b 10                	mov    (%rax),%edx
-   408cc:	48 8b 05 2d e6 00 00 	mov    0xe62d(%rip),%rax        # 4ef00 <current>
+   408cc:	48 8b 05 2d f6 00 00 	mov    0xf62d(%rip),%rax        # 4ff00 <current>
    408d3:	48 63 d2             	movslq %edx,%rdx
    408d6:	48 89 50 18          	mov    %rdx,0x18(%rax)
                 break;
@@ -1144,7 +1144,7 @@ void exception(x86_64_registers* reg) {
    408df:	b8 00 00 00 00       	mov    $0x0,%eax
    408e4:	e8 3d fb ff ff       	call   40426 <syscall_fork>
    408e9:	89 c2                	mov    %eax,%edx
-   408eb:	48 8b 05 0e e6 00 00 	mov    0xe60e(%rip),%rax        # 4ef00 <current>
+   408eb:	48 8b 05 0e f6 00 00 	mov    0xf60e(%rip),%rax        # 4ff00 <current>
    408f2:	48 63 d2             	movslq %edx,%rdx
    408f5:	48 89 50 18          	mov    %rdx,0x18(%rax)
                 break;
@@ -1153,7 +1153,7 @@ void exception(x86_64_registers* reg) {
         case INT_SYS_MAPPING:
             {
                 syscall_mapping(current);
-   408fe:	48 8b 05 fb e5 00 00 	mov    0xe5fb(%rip),%rax        # 4ef00 <current>
+   408fe:	48 8b 05 fb f5 00 00 	mov    0xf5fb(%rip),%rax        # 4ff00 <current>
    40905:	48 89 c7             	mov    %rax,%rdi
    40908:	e8 1e fd ff ff       	call   4062b <syscall_mapping>
                 break;
@@ -1185,7 +1185,7 @@ void exception(x86_64_registers* reg) {
 				brk(current, reg->reg_rdi);
    40930:	48 8b 85 08 ff ff ff 	mov    -0xf8(%rbp),%rax
    40937:	48 8b 50 30          	mov    0x30(%rax),%rdx
-   4093b:	48 8b 05 be e5 00 00 	mov    0xe5be(%rip),%rax        # 4ef00 <current>
+   4093b:	48 8b 05 be f5 00 00 	mov    0xf5be(%rip),%rax        # 4ff00 <current>
    40942:	48 89 d6             	mov    %rdx,%rsi
    40945:	48 89 c7             	mov    %rax,%rdi
    40948:	e8 29 fb ff ff       	call   40476 <brk>
@@ -1200,7 +1200,7 @@ void exception(x86_64_registers* reg) {
    40952:	48 8b 85 08 ff ff ff 	mov    -0xf8(%rbp),%rax
    40959:	48 8b 40 30          	mov    0x30(%rax),%rax
    4095d:	48 89 c2             	mov    %rax,%rdx
-   40960:	48 8b 05 99 e5 00 00 	mov    0xe599(%rip),%rax        # 4ef00 <current>
+   40960:	48 8b 05 99 f5 00 00 	mov    0xf599(%rip),%rax        # 4ff00 <current>
    40967:	48 89 d6             	mov    %rdx,%rsi
    4096a:	48 89 c7             	mov    %rax,%rdi
    4096d:	e8 46 fc ff ff       	call   405b8 <sbrk>
@@ -1223,7 +1223,7 @@ void exception(x86_64_registers* reg) {
         case INT_SYS_MEM_TOG:
             {
                 syscall_mem_tog(current);
-   40997:	48 8b 05 62 e5 00 00 	mov    0xe562(%rip),%rax        # 4ef00 <current>
+   40997:	48 8b 05 62 f5 00 00 	mov    0xf562(%rip),%rax        # 4ff00 <current>
    4099e:	48 89 c7             	mov    %rax,%rdi
    409a1:	e8 68 fd ff ff       	call   4070e <syscall_mem_tog>
                 break;
@@ -1233,9 +1233,9 @@ void exception(x86_64_registers* reg) {
         case INT_TIMER:
             {
                 ++ticks;
-   409ab:	8b 05 6f e9 00 00    	mov    0xe96f(%rip),%eax        # 4f320 <ticks>
+   409ab:	8b 05 6f f9 00 00    	mov    0xf96f(%rip),%eax        # 50320 <ticks>
    409b1:	83 c0 01             	add    $0x1,%eax
-   409b4:	89 05 66 e9 00 00    	mov    %eax,0xe966(%rip)        # 4f320 <ticks>
+   409b4:	89 05 66 f9 00 00    	mov    %eax,0xf966(%rip)        # 50320 <ticks>
                 schedule();
    409ba:	e8 cc 01 00 00       	call   40b8b <schedule>
                 break;                  /* will not be reached */
@@ -1263,18 +1263,18 @@ static inline uintptr_t rcr2(void) {
 		if (//reg->reg_err != PFERR_PRESENT 
 		    //&& 
 		    addr >= current->original_break && addr < current->program_break) {
-   409d3:	48 8b 05 26 e5 00 00 	mov    0xe526(%rip),%rax        # 4ef00 <current>
+   409d3:	48 8b 05 26 f5 00 00 	mov    0xf526(%rip),%rax        # 4ff00 <current>
    409da:	48 8b 40 10          	mov    0x10(%rax),%rax
 		if (//reg->reg_err != PFERR_PRESENT 
    409de:	48 39 45 e8          	cmp    %rax,-0x18(%rbp)
    409e2:	72 76                	jb     40a5a <exception+0x2e3>
 		    addr >= current->original_break && addr < current->program_break) {
-   409e4:	48 8b 05 15 e5 00 00 	mov    0xe515(%rip),%rax        # 4ef00 <current>
+   409e4:	48 8b 05 15 f5 00 00 	mov    0xf515(%rip),%rax        # 4ff00 <current>
    409eb:	48 8b 40 08          	mov    0x8(%rax),%rax
    409ef:	48 39 45 e8          	cmp    %rax,-0x18(%rbp)
    409f3:	73 65                	jae    40a5a <exception+0x2e3>
 			uintptr_t pa = (uintptr_t) palloc(current->p_pid);
-   409f5:	48 8b 05 04 e5 00 00 	mov    0xe504(%rip),%rax        # 4ef00 <current>
+   409f5:	48 8b 05 04 f5 00 00 	mov    0xf504(%rip),%rax        # 4ff00 <current>
    409fc:	8b 00                	mov    (%rax),%eax
    409fe:	89 c7                	mov    %eax,%edi
    40a00:	e8 70 26 00 00       	call   43075 <palloc>
@@ -1288,7 +1288,7 @@ static inline uintptr_t rcr2(void) {
    40a18:	48 98                	cltq   
    40a1a:	48 c1 e0 0c          	shl    $0xc,%rax
    40a1e:	48 89 c6             	mov    %rax,%rsi
-   40a21:	48 8b 05 d8 e4 00 00 	mov    0xe4d8(%rip),%rax        # 4ef00 <current>
+   40a21:	48 8b 05 d8 f4 00 00 	mov    0xf4d8(%rip),%rax        # 4ff00 <current>
    40a28:	48 8b 80 e0 00 00 00 	mov    0xe0(%rax),%rax
    40a2f:	48 8b 55 e0          	mov    -0x20(%rbp),%rdx
    40a33:	41 b8 07 00 00 00    	mov    $0x7,%r8d
@@ -1355,7 +1355,7 @@ static inline uintptr_t rcr2(void) {
    40af2:	48 8b 90 98 00 00 00 	mov    0x98(%rax),%rdx
 				"Process %d page fault for %p (%s %s, rip=%p)!\n",
 				current->p_pid, addr, operation, problem, reg->reg_rip);
-   40af9:	48 8b 05 00 e4 00 00 	mov    0xe400(%rip),%rax        # 4ef00 <current>
+   40af9:	48 8b 05 00 f4 00 00 	mov    0xf400(%rip),%rax        # 4ff00 <current>
 			console_printf(CPOS(24, 0), 0x0C00,
    40b00:	8b 00                	mov    (%rax),%eax
    40b02:	48 8b 75 d8          	mov    -0x28(%rbp),%rsi
@@ -1372,7 +1372,7 @@ static inline uintptr_t rcr2(void) {
    40b2a:	e8 2f 3f 00 00       	call   44a5e <console_printf>
    40b2f:	48 83 c4 10          	add    $0x10,%rsp
 			current->p_state = P_BROKEN;
-   40b33:	48 8b 05 c6 e3 00 00 	mov    0xe3c6(%rip),%rax        # 4ef00 <current>
+   40b33:	48 8b 05 c6 f3 00 00 	mov    0xf3c6(%rip),%rax        # 4ff00 <current>
    40b3a:	c7 80 d8 00 00 00 03 	movl   $0x3,0xd8(%rax)
    40b41:	00 00 00 
 			syscall_exit();
@@ -1386,7 +1386,7 @@ static inline uintptr_t rcr2(void) {
 
         default:
             default_exception(current);
-   40b52:	48 8b 05 a7 e3 00 00 	mov    0xe3a7(%rip),%rax        # 4ef00 <current>
+   40b52:	48 8b 05 a7 f3 00 00 	mov    0xf3a7(%rip),%rax        # 4ff00 <current>
    40b59:	48 89 c7             	mov    %rax,%rdi
    40b5c:	e8 33 1a 00 00       	call   42594 <default_exception>
             break;                  /* will not be reached */
@@ -1396,12 +1396,12 @@ static inline uintptr_t rcr2(void) {
 
     // Return to the current process (or run something else).
     if (current->p_state == P_RUNNABLE) {
-   40b62:	48 8b 05 97 e3 00 00 	mov    0xe397(%rip),%rax        # 4ef00 <current>
+   40b62:	48 8b 05 97 f3 00 00 	mov    0xf397(%rip),%rax        # 4ff00 <current>
    40b69:	8b 80 d8 00 00 00    	mov    0xd8(%rax),%eax
    40b6f:	83 f8 01             	cmp    $0x1,%eax
    40b72:	75 0f                	jne    40b83 <exception+0x40c>
         run(current);
-   40b74:	48 8b 05 85 e3 00 00 	mov    0xe385(%rip),%rax        # 4ef00 <current>
+   40b74:	48 8b 05 85 f3 00 00 	mov    0xf385(%rip),%rax        # 4ff00 <current>
    40b7b:	48 89 c7             	mov    %rax,%rdi
    40b7e:	e8 7e 00 00 00       	call   40c01 <run>
     } else {
@@ -1424,7 +1424,7 @@ void schedule(void) {
    40b8c:	48 89 e5             	mov    %rsp,%rbp
    40b8f:	48 83 ec 10          	sub    $0x10,%rsp
     pid_t pid = current->p_pid;
-   40b93:	48 8b 05 66 e3 00 00 	mov    0xe366(%rip),%rax        # 4ef00 <current>
+   40b93:	48 8b 05 66 f3 00 00 	mov    0xf366(%rip),%rax        # 4ff00 <current>
    40b9a:	8b 00                	mov    (%rax),%eax
    40b9c:	89 45 fc             	mov    %eax,-0x4(%rbp)
     while (1) {
@@ -1445,7 +1445,7 @@ void schedule(void) {
    40bc0:	48 c1 e0 04          	shl    $0x4,%rax
    40bc4:	48 29 d0             	sub    %rdx,%rax
    40bc7:	48 c1 e0 04          	shl    $0x4,%rax
-   40bcb:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   40bcb:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    40bd1:	8b 00                	mov    (%rax),%eax
    40bd3:	83 f8 01             	cmp    $0x1,%eax
    40bd6:	75 22                	jne    40bfa <schedule+0x6f>
@@ -1456,7 +1456,7 @@ void schedule(void) {
    40be1:	48 c1 e0 04          	shl    $0x4,%rax
    40be5:	48 29 d0             	sub    %rdx,%rax
    40be8:	48 c1 e0 04          	shl    $0x4,%rax
-   40bec:	48 05 00 e0 04 00    	add    $0x4e000,%rax
+   40bec:	48 05 00 f0 04 00    	add    $0x4f000,%rax
    40bf2:	48 89 c7             	mov    %rax,%rdi
    40bf5:	e8 07 00 00 00       	call   40c01 <run>
         }
@@ -1488,7 +1488,7 @@ void run(proc* p) {
    40c2b:	e8 34 19 00 00       	call   42564 <assert_fail>
     current = p;
    40c30:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-   40c34:	48 89 05 c5 e2 00 00 	mov    %rax,0xe2c5(%rip)        # 4ef00 <current>
+   40c34:	48 89 05 c5 f2 00 00 	mov    %rax,0xf2c5(%rip)        # 4ff00 <current>
 
     // display running process in CONSOLE last value
     console_printf(CPOS(24, 79),
@@ -1555,7 +1555,7 @@ void pageinfo_init(void) {
    40cc0:	48 81 7d f8 ff ff 03 	cmpq   $0x3ffff,-0x8(%rbp)
    40cc7:	00 
    40cc8:	76 0b                	jbe    40cd5 <pageinfo_init+0x43>
-   40cca:	b8 10 70 05 00       	mov    $0x57010,%eax
+   40cca:	b8 10 80 05 00       	mov    $0x58010,%eax
    40ccf:	48 39 45 f8          	cmp    %rax,-0x8(%rbp)
    40cd3:	72 0a                	jb     40cdf <pageinfo_init+0x4d>
                    || addr == KERNEL_STACK_TOP - PAGESIZE) {
@@ -1576,14 +1576,14 @@ void pageinfo_init(void) {
    40cf9:	8b 45 f4             	mov    -0xc(%rbp),%eax
    40cfc:	89 c2                	mov    %eax,%edx
    40cfe:	48 63 c1             	movslq %ecx,%rax
-   40d01:	88 94 00 20 ef 04 00 	mov    %dl,0x4ef20(%rax,%rax,1)
+   40d01:	88 94 00 20 ff 04 00 	mov    %dl,0x4ff20(%rax,%rax,1)
         pageinfo[PAGENUMBER(addr)].refcount = (owner != PO_FREE);
    40d08:	83 7d f4 00          	cmpl   $0x0,-0xc(%rbp)
    40d0c:	0f 95 c2             	setne  %dl
    40d0f:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
    40d13:	48 c1 e8 0c          	shr    $0xc,%rax
    40d17:	48 98                	cltq   
-   40d19:	88 94 00 21 ef 04 00 	mov    %dl,0x4ef21(%rax,%rax,1)
+   40d19:	88 94 00 21 ff 04 00 	mov    %dl,0x4ff21(%rax,%rax,1)
     for (uintptr_t addr = 0; addr < MEMSIZE_PHYSICAL; addr += PAGESIZE) {
    40d20:	48 81 45 f8 00 10 00 	addq   $0x1000,-0x8(%rbp)
    40d27:	00 
@@ -1675,7 +1675,7 @@ void check_page_table_mappings(x86_64_pagetable* pt) {
    40e0f:	48 81 45 f8 00 10 00 	addq   $0x1000,-0x8(%rbp)
    40e16:	00 
     for (uintptr_t va = KERNEL_START_ADDR; va < (uintptr_t) end;
-   40e17:	b8 10 70 05 00       	mov    $0x57010,%eax
+   40e17:	b8 10 80 05 00       	mov    $0x58010,%eax
    40e1c:	48 39 45 f8          	cmp    %rax,-0x8(%rbp)
    40e20:	0f 82 57 ff ff ff    	jb     40d7d <check_page_table_mappings+0x43>
         }
@@ -1734,7 +1734,7 @@ void check_page_table_ownership(x86_64_pagetable* pt, pid_t pid) {
     int expected_refcount = 1;
    40e9c:	c7 45 f8 01 00 00 00 	movl   $0x1,-0x8(%rbp)
     if (pt == kernel_pagetable) {
-   40ea3:	48 8b 05 56 01 01 00 	mov    0x10156(%rip),%rax        # 51000 <kernel_pagetable>
+   40ea3:	48 8b 05 56 11 01 00 	mov    0x11156(%rip),%rax        # 52000 <kernel_pagetable>
    40eaa:	48 39 45 e8          	cmp    %rax,-0x18(%rbp)
    40eae:	75 67                	jne    40f17 <check_page_table_ownership+0x90>
         owner = PO_KERNEL;
@@ -1749,7 +1749,7 @@ void check_page_table_ownership(x86_64_pagetable* pt, pid_t pid) {
    40ec9:	48 c1 e0 04          	shl    $0x4,%rax
    40ecd:	48 29 d0             	sub    %rdx,%rax
    40ed0:	48 c1 e0 04          	shl    $0x4,%rax
-   40ed4:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   40ed4:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    40eda:	8b 00                	mov    (%rax),%eax
    40edc:	85 c0                	test   %eax,%eax
    40ede:	74 2d                	je     40f0d <check_page_table_ownership+0x86>
@@ -1760,9 +1760,9 @@ void check_page_table_ownership(x86_64_pagetable* pt, pid_t pid) {
    40ee9:	48 c1 e0 04          	shl    $0x4,%rax
    40eed:	48 29 d0             	sub    %rdx,%rax
    40ef0:	48 c1 e0 04          	shl    $0x4,%rax
-   40ef4:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   40ef4:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    40efa:	48 8b 10             	mov    (%rax),%rdx
-   40efd:	48 8b 05 fc 00 01 00 	mov    0x100fc(%rip),%rax        # 51000 <kernel_pagetable>
+   40efd:	48 8b 05 fc 10 01 00 	mov    0x110fc(%rip),%rax        # 52000 <kernel_pagetable>
    40f04:	48 39 c2             	cmp    %rax,%rdx
    40f07:	75 04                	jne    40f0d <check_page_table_ownership+0x86>
                 ++expected_refcount;
@@ -1810,7 +1810,7 @@ static void check_page_table_ownership_level(x86_64_pagetable* pt, int level,
    40f69:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    40f6d:	48 c1 e8 0c          	shr    $0xc,%rax
    40f71:	48 98                	cltq   
-   40f73:	0f b6 84 00 20 ef 04 	movzbl 0x4ef20(%rax,%rax,1),%eax
+   40f73:	0f b6 84 00 20 ff 04 	movzbl 0x4ff20(%rax,%rax,1),%eax
    40f7a:	00 
    40f7b:	0f be c0             	movsbl %al,%eax
    40f7e:	39 45 e0             	cmp    %eax,-0x20(%rbp)
@@ -1823,7 +1823,7 @@ static void check_page_table_ownership_level(x86_64_pagetable* pt, int level,
    40f97:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    40f9b:	48 c1 e8 0c          	shr    $0xc,%rax
    40f9f:	48 98                	cltq   
-   40fa1:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   40fa1:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    40fa8:	00 
    40fa9:	0f be c0             	movsbl %al,%eax
    40fac:	39 45 dc             	cmp    %eax,-0x24(%rbp)
@@ -1886,7 +1886,7 @@ void check_virtual_memory(void) {
    4102d:	48 83 ec 10          	sub    $0x10,%rsp
     // Process 0 must never be used.
     assert(processes[0].p_state == P_FREE);
-   41031:	8b 05 a1 d0 00 00    	mov    0xd0a1(%rip),%eax        # 4e0d8 <processes+0xd8>
+   41031:	8b 05 a1 e0 00 00    	mov    0xe0a1(%rip),%eax        # 4f0d8 <processes+0xd8>
    41037:	85 c0                	test   %eax,%eax
    41039:	74 14                	je     4104f <check_virtual_memory+0x26>
    4103b:	ba 98 4f 04 00       	mov    $0x44f98,%edx
@@ -1899,11 +1899,11 @@ void check_virtual_memory(void) {
     // All level-2-4 page tables must have reference count 1.
 
     check_page_table_mappings(kernel_pagetable);
-   4104f:	48 8b 05 aa ff 00 00 	mov    0xffaa(%rip),%rax        # 51000 <kernel_pagetable>
+   4104f:	48 8b 05 aa 0f 01 00 	mov    0x10faa(%rip),%rax        # 52000 <kernel_pagetable>
    41056:	48 89 c7             	mov    %rax,%rdi
    41059:	e8 dc fc ff ff       	call   40d3a <check_page_table_mappings>
     check_page_table_ownership(kernel_pagetable, -1);
-   4105e:	48 8b 05 9b ff 00 00 	mov    0xff9b(%rip),%rax        # 51000 <kernel_pagetable>
+   4105e:	48 8b 05 9b 0f 01 00 	mov    0x10f9b(%rip),%rax        # 52000 <kernel_pagetable>
    41065:	be ff ff ff ff       	mov    $0xffffffff,%esi
    4106a:	48 89 c7             	mov    %rax,%rdi
    4106d:	e8 15 fe ff ff       	call   40e87 <check_page_table_ownership>
@@ -1918,7 +1918,7 @@ void check_virtual_memory(void) {
    41087:	48 c1 e0 04          	shl    $0x4,%rax
    4108b:	48 29 d0             	sub    %rdx,%rax
    4108e:	48 c1 e0 04          	shl    $0x4,%rax
-   41092:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   41092:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    41098:	8b 00                	mov    (%rax),%eax
    4109a:	85 c0                	test   %eax,%eax
    4109c:	74 78                	je     41116 <check_virtual_memory+0xed>
@@ -1929,9 +1929,9 @@ void check_virtual_memory(void) {
    410a7:	48 c1 e0 04          	shl    $0x4,%rax
    410ab:	48 29 d0             	sub    %rdx,%rax
    410ae:	48 c1 e0 04          	shl    $0x4,%rax
-   410b2:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   410b2:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    410b8:	48 8b 10             	mov    (%rax),%rdx
-   410bb:	48 8b 05 3e ff 00 00 	mov    0xff3e(%rip),%rax        # 51000 <kernel_pagetable>
+   410bb:	48 8b 05 3e 0f 01 00 	mov    0x10f3e(%rip),%rax        # 52000 <kernel_pagetable>
    410c2:	48 39 c2             	cmp    %rax,%rdx
    410c5:	74 4f                	je     41116 <check_virtual_memory+0xed>
             check_page_table_mappings(processes[pid].p_pagetable);
@@ -1941,7 +1941,7 @@ void check_virtual_memory(void) {
    410d0:	48 c1 e0 04          	shl    $0x4,%rax
    410d4:	48 29 d0             	sub    %rdx,%rax
    410d7:	48 c1 e0 04          	shl    $0x4,%rax
-   410db:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   410db:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    410e1:	48 8b 00             	mov    (%rax),%rax
    410e4:	48 89 c7             	mov    %rax,%rdi
    410e7:	e8 4e fc ff ff       	call   40d3a <check_page_table_mappings>
@@ -1952,7 +1952,7 @@ void check_virtual_memory(void) {
    410f5:	48 c1 e0 04          	shl    $0x4,%rax
    410f9:	48 29 d0             	sub    %rdx,%rax
    410fc:	48 c1 e0 04          	shl    $0x4,%rax
-   41100:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   41100:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    41106:	48 8b 00             	mov    (%rax),%rax
    41109:	8b 55 fc             	mov    -0x4(%rbp),%edx
    4110c:	89 d6                	mov    %edx,%esi
@@ -1972,20 +1972,20 @@ void check_virtual_memory(void) {
         if (pageinfo[pn].refcount > 0 && pageinfo[pn].owner >= 0) {
    4112d:	8b 45 f8             	mov    -0x8(%rbp),%eax
    41130:	48 98                	cltq   
-   41132:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   41132:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    41139:	00 
    4113a:	84 c0                	test   %al,%al
    4113c:	7e 52                	jle    41190 <check_virtual_memory+0x167>
    4113e:	8b 45 f8             	mov    -0x8(%rbp),%eax
    41141:	48 98                	cltq   
-   41143:	0f b6 84 00 20 ef 04 	movzbl 0x4ef20(%rax,%rax,1),%eax
+   41143:	0f b6 84 00 20 ff 04 	movzbl 0x4ff20(%rax,%rax,1),%eax
    4114a:	00 
    4114b:	84 c0                	test   %al,%al
    4114d:	78 41                	js     41190 <check_virtual_memory+0x167>
             assert(processes[pageinfo[pn].owner].p_state != P_FREE);
    4114f:	8b 45 f8             	mov    -0x8(%rbp),%eax
    41152:	48 98                	cltq   
-   41154:	0f b6 84 00 20 ef 04 	movzbl 0x4ef20(%rax,%rax,1),%eax
+   41154:	0f b6 84 00 20 ff 04 	movzbl 0x4ff20(%rax,%rax,1),%eax
    4115b:	00 
    4115c:	0f be c0             	movsbl %al,%eax
    4115f:	48 63 d0             	movslq %eax,%rdx
@@ -1993,7 +1993,7 @@ void check_virtual_memory(void) {
    41165:	48 c1 e0 04          	shl    $0x4,%rax
    41169:	48 29 d0             	sub    %rdx,%rax
    4116c:	48 c1 e0 04          	shl    $0x4,%rax
-   41170:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   41170:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    41176:	8b 00                	mov    (%rax),%eax
    41178:	85 c0                	test   %eax,%eax
    4117a:	75 14                	jne    41190 <check_virtual_memory+0x167>
@@ -2062,14 +2062,14 @@ void memshow_physical(void) {
         int owner = pageinfo[pn].owner;
    41214:	8b 45 fc             	mov    -0x4(%rbp),%eax
    41217:	48 98                	cltq   
-   41219:	0f b6 84 00 20 ef 04 	movzbl 0x4ef20(%rax,%rax,1),%eax
+   41219:	0f b6 84 00 20 ff 04 	movzbl 0x4ff20(%rax,%rax,1),%eax
    41220:	00 
    41221:	0f be c0             	movsbl %al,%eax
    41224:	89 45 f8             	mov    %eax,-0x8(%rbp)
         if (pageinfo[pn].refcount == 0) {
    41227:	8b 45 fc             	mov    -0x4(%rbp),%eax
    4122a:	48 98                	cltq   
-   4122c:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   4122c:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    41233:	00 
    41234:	84 c0                	test   %al,%al
    41236:	75 07                	jne    4123f <memshow_physical+0x9e>
@@ -2087,7 +2087,7 @@ void memshow_physical(void) {
         if (pageinfo[pn].refcount > 1 && pn != PAGENUMBER(CONSOLE_ADDR)){
    41253:	8b 45 fc             	mov    -0x4(%rbp),%eax
    41256:	48 98                	cltq   
-   41258:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   41258:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    4125f:	00 
    41260:	3c 01                	cmp    $0x1,%al
    41262:	7e 1a                	jle    4127e <memshow_physical+0xdd>
@@ -2205,14 +2205,14 @@ void memshow_virtual(x86_64_pagetable* pagetable, const char* name) {
             int owner = pageinfo[vam.pn].owner;
    41387:	8b 45 d0             	mov    -0x30(%rbp),%eax
    4138a:	48 98                	cltq   
-   4138c:	0f b6 84 00 20 ef 04 	movzbl 0x4ef20(%rax,%rax,1),%eax
+   4138c:	0f b6 84 00 20 ff 04 	movzbl 0x4ff20(%rax,%rax,1),%eax
    41393:	00 
    41394:	0f be c0             	movsbl %al,%eax
    41397:	89 45 f0             	mov    %eax,-0x10(%rbp)
             if (pageinfo[vam.pn].refcount == 0) {
    4139a:	8b 45 d0             	mov    -0x30(%rbp),%eax
    4139d:	48 98                	cltq   
-   4139f:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   4139f:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    413a6:	00 
    413a7:	84 c0                	test   %al,%al
    413a9:	75 07                	jne    413b2 <memshow_virtual+0xdb>
@@ -2253,7 +2253,7 @@ void memshow_virtual(x86_64_pagetable* pagetable, const char* name) {
             if (pageinfo[vam.pn].refcount > 1 && va != CONSOLE_ADDR) {
    413fa:	8b 45 d0             	mov    -0x30(%rbp),%eax
    413fd:	48 98                	cltq   
-   413ff:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   413ff:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    41406:	00 
    41407:	3c 01                	cmp    $0x1,%al
    41409:	7e 33                	jle    4143e <memshow_virtual+0x167>
@@ -2352,17 +2352,17 @@ void memshow_virtual_animate(void) {
 
     // switch to a new process every 0.25 sec
     if (last_ticks == 0 || ticks - last_ticks >= HZ / 2) {
-   414d8:	8b 05 46 de 00 00    	mov    0xde46(%rip),%eax        # 4f324 <last_ticks.1>
+   414d8:	8b 05 46 ee 00 00    	mov    0xee46(%rip),%eax        # 50324 <last_ticks.1>
    414de:	85 c0                	test   %eax,%eax
    414e0:	74 13                	je     414f5 <memshow_virtual_animate+0x25>
-   414e2:	8b 15 38 de 00 00    	mov    0xde38(%rip),%edx        # 4f320 <ticks>
-   414e8:	8b 05 36 de 00 00    	mov    0xde36(%rip),%eax        # 4f324 <last_ticks.1>
+   414e2:	8b 15 38 ee 00 00    	mov    0xee38(%rip),%edx        # 50320 <ticks>
+   414e8:	8b 05 36 ee 00 00    	mov    0xee36(%rip),%eax        # 50324 <last_ticks.1>
    414ee:	29 c2                	sub    %eax,%edx
    414f0:	83 fa 31             	cmp    $0x31,%edx
    414f3:	76 2c                	jbe    41521 <memshow_virtual_animate+0x51>
         last_ticks = ticks;
-   414f5:	8b 05 25 de 00 00    	mov    0xde25(%rip),%eax        # 4f320 <ticks>
-   414fb:	89 05 23 de 00 00    	mov    %eax,0xde23(%rip)        # 4f324 <last_ticks.1>
+   414f5:	8b 05 25 ee 00 00    	mov    0xee25(%rip),%eax        # 50320 <ticks>
+   414fb:	89 05 23 ee 00 00    	mov    %eax,0xee23(%rip)        # 50324 <last_ticks.1>
         ++showing;
    41501:	8b 05 fd 4a 00 00    	mov    0x4afd(%rip),%eax        # 46004 <showing.0>
    41507:	83 c0 01             	add    $0x1,%eax
@@ -2395,7 +2395,7 @@ void memshow_virtual_animate(void) {
    41549:	48 c1 e0 04          	shl    $0x4,%rax
    4154d:	48 29 d0             	sub    %rdx,%rax
    41550:	48 c1 e0 04          	shl    $0x4,%rax
-   41554:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   41554:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    4155a:	8b 00                	mov    (%rax),%eax
    4155c:	85 c0                	test   %eax,%eax
    4155e:	74 b2                	je     41512 <memshow_virtual_animate+0x42>
@@ -2418,7 +2418,7 @@ void memshow_virtual_animate(void) {
    41589:	48 c1 e0 04          	shl    $0x4,%rax
    4158d:	48 29 d0             	sub    %rdx,%rax
    41590:	48 c1 e0 04          	shl    $0x4,%rax
-   41594:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   41594:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    4159a:	8b 00                	mov    (%rax),%eax
    4159c:	85 c0                	test   %eax,%eax
    4159e:	74 76                	je     41616 <memshow_virtual_animate+0x146>
@@ -2428,7 +2428,7 @@ void memshow_virtual_animate(void) {
    415ac:	48 c1 e0 04          	shl    $0x4,%rax
    415b0:	48 29 d0             	sub    %rdx,%rax
    415b3:	48 c1 e0 04          	shl    $0x4,%rax
-   415b7:	48 05 e8 e0 04 00    	add    $0x4e0e8,%rax
+   415b7:	48 05 e8 f0 04 00    	add    $0x4f0e8,%rax
    415bd:	0f b6 00             	movzbl (%rax),%eax
    415c0:	84 c0                	test   %al,%al
    415c2:	74 52                	je     41616 <memshow_virtual_animate+0x146>
@@ -2449,7 +2449,7 @@ void memshow_virtual_animate(void) {
    415f3:	48 c1 e0 04          	shl    $0x4,%rax
    415f7:	48 29 d0             	sub    %rdx,%rax
    415fa:	48 c1 e0 04          	shl    $0x4,%rax
-   415fe:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   415fe:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    41604:	48 8b 00             	mov    (%rax),%rax
    41607:	48 8d 55 fc          	lea    -0x4(%rbp),%rdx
    4160b:	48 89 d6             	mov    %rdx,%rsi
@@ -2636,45 +2636,45 @@ void segments_init(void) {
     // The privilege level, which can be 0 or 3, differentiates between
     // kernel and user code. (Data segments are unused in WeensyOS.)
     segments[0] = 0;
-   41779:	48 c7 05 bc db 00 00 	movq   $0x0,0xdbbc(%rip)        # 4f340 <segments>
+   41779:	48 c7 05 bc eb 00 00 	movq   $0x0,0xebbc(%rip)        # 50340 <segments>
    41780:	00 00 00 00 
     set_app_segment(&segments[SEGSEL_KERN_CODE >> 3], X86SEG_X | X86SEG_L, 0);
    41784:	ba 00 00 00 00       	mov    $0x0,%edx
    41789:	48 b8 00 00 00 00 00 	movabs $0x20080000000000,%rax
    41790:	08 20 00 
    41793:	48 89 c6             	mov    %rax,%rsi
-   41796:	bf 48 f3 04 00       	mov    $0x4f348,%edi
+   41796:	bf 48 03 05 00       	mov    $0x50348,%edi
    4179b:	e8 8f fe ff ff       	call   4162f <set_app_segment>
     set_app_segment(&segments[SEGSEL_APP_CODE >> 3], X86SEG_X | X86SEG_L, 3);
    417a0:	ba 03 00 00 00       	mov    $0x3,%edx
    417a5:	48 b8 00 00 00 00 00 	movabs $0x20080000000000,%rax
    417ac:	08 20 00 
    417af:	48 89 c6             	mov    %rax,%rsi
-   417b2:	bf 50 f3 04 00       	mov    $0x4f350,%edi
+   417b2:	bf 50 03 05 00       	mov    $0x50350,%edi
    417b7:	e8 73 fe ff ff       	call   4162f <set_app_segment>
     set_app_segment(&segments[SEGSEL_KERN_DATA >> 3], X86SEG_W, 0);
    417bc:	ba 00 00 00 00       	mov    $0x0,%edx
    417c1:	48 b8 00 00 00 00 00 	movabs $0x20000000000,%rax
    417c8:	02 00 00 
    417cb:	48 89 c6             	mov    %rax,%rsi
-   417ce:	bf 58 f3 04 00       	mov    $0x4f358,%edi
+   417ce:	bf 58 03 05 00       	mov    $0x50358,%edi
    417d3:	e8 57 fe ff ff       	call   4162f <set_app_segment>
     set_app_segment(&segments[SEGSEL_APP_DATA >> 3], X86SEG_W, 3);
    417d8:	ba 03 00 00 00       	mov    $0x3,%edx
    417dd:	48 b8 00 00 00 00 00 	movabs $0x20000000000,%rax
    417e4:	02 00 00 
    417e7:	48 89 c6             	mov    %rax,%rsi
-   417ea:	bf 60 f3 04 00       	mov    $0x4f360,%edi
+   417ea:	bf 60 03 05 00       	mov    $0x50360,%edi
    417ef:	e8 3b fe ff ff       	call   4162f <set_app_segment>
     set_sys_segment(&segments[SEGSEL_TASKSTATE >> 3], X86SEG_TSS, 0,
-   417f4:	b8 80 03 05 00       	mov    $0x50380,%eax
+   417f4:	b8 80 13 05 00       	mov    $0x51380,%eax
    417f9:	41 b8 60 00 00 00    	mov    $0x60,%r8d
    417ff:	48 89 c1             	mov    %rax,%rcx
    41802:	ba 00 00 00 00       	mov    $0x0,%edx
    41807:	48 b8 00 00 00 00 00 	movabs $0x90000000000,%rax
    4180e:	09 00 00 
    41811:	48 89 c6             	mov    %rax,%rsi
-   41814:	bf 68 f3 04 00       	mov    $0x4f368,%edi
+   41814:	bf 68 03 05 00       	mov    $0x50368,%edi
    41819:	e8 48 fe ff ff       	call   41666 <set_sys_segment>
                     (uintptr_t) &kernel_task_descriptor,
                     sizeof(kernel_task_descriptor));
@@ -2683,24 +2683,24 @@ void segments_init(void) {
     gdt.pseudod_limit = sizeof(segments) - 1;
    4181e:	66 c7 45 d6 37 00    	movw   $0x37,-0x2a(%rbp)
     gdt.pseudod_base = (uint64_t) segments;
-   41824:	b8 40 f3 04 00       	mov    $0x4f340,%eax
+   41824:	b8 40 03 05 00       	mov    $0x50340,%eax
    41829:	48 89 45 d8          	mov    %rax,-0x28(%rbp)
 
     // Kernel task descriptor lets us receive interrupts
     memset(&kernel_task_descriptor, 0, sizeof(kernel_task_descriptor));
    4182d:	ba 60 00 00 00       	mov    $0x60,%edx
    41832:	be 00 00 00 00       	mov    $0x0,%esi
-   41837:	bf 80 03 05 00       	mov    $0x50380,%edi
+   41837:	bf 80 13 05 00       	mov    $0x51380,%edi
    4183c:	e8 66 24 00 00       	call   43ca7 <memset>
     kernel_task_descriptor.ts_rsp[0] = KERNEL_STACK_TOP;
-   41841:	48 c7 05 38 eb 00 00 	movq   $0x80000,0xeb38(%rip)        # 50384 <kernel_task_descriptor+0x4>
+   41841:	48 c7 05 38 fb 00 00 	movq   $0x80000,0xfb38(%rip)        # 51384 <kernel_task_descriptor+0x4>
    41848:	00 00 08 00 
 
     // Interrupt handler; most interrupts are effectively ignored
     memset(interrupt_descriptors, 0, sizeof(interrupt_descriptors));
    4184c:	ba 00 10 00 00       	mov    $0x1000,%edx
    41851:	be 00 00 00 00       	mov    $0x0,%esi
-   41856:	bf 80 f3 04 00       	mov    $0x4f380,%edi
+   41856:	bf 80 03 05 00       	mov    $0x50380,%edi
    4185b:	e8 47 24 00 00       	call   43ca7 <memset>
     for (unsigned i = 16; i < arraysize(interrupt_descriptors); ++i) {
    41860:	c7 45 fc 10 00 00 00 	movl   $0x10,-0x4(%rbp)
@@ -2709,7 +2709,7 @@ void segments_init(void) {
    41869:	ba 9c 00 04 00       	mov    $0x4009c,%edx
    4186e:	8b 45 fc             	mov    -0x4(%rbp),%eax
    41871:	48 c1 e0 04          	shl    $0x4,%rax
-   41875:	48 05 80 f3 04 00    	add    $0x4f380,%rax
+   41875:	48 05 80 03 05 00    	add    $0x50380,%rax
    4187b:	48 89 d1             	mov    %rdx,%rcx
    4187e:	ba 00 00 00 00       	mov    $0x0,%edx
    41883:	48 be 00 00 00 00 00 	movabs $0xe0000000000,%rsi
@@ -2731,7 +2731,7 @@ void segments_init(void) {
    418af:	48 b8 00 00 00 00 00 	movabs $0xe0000000000,%rax
    418b6:	0e 00 00 
    418b9:	48 89 c6             	mov    %rax,%rsi
-   418bc:	bf 80 f5 04 00       	mov    $0x4f580,%edi
+   418bc:	bf 80 05 05 00       	mov    $0x50580,%edi
    418c1:	e8 37 fe ff ff       	call   416fd <set_gate>
              (uint64_t) timer_int_handler);
 
@@ -2743,7 +2743,7 @@ void segments_init(void) {
    418d3:	48 b8 00 00 00 00 00 	movabs $0xe0000000000,%rax
    418da:	0e 00 00 
    418dd:	48 89 c6             	mov    %rax,%rsi
-   418e0:	bf 50 f4 04 00       	mov    $0x4f450,%edi
+   418e0:	bf 50 04 05 00       	mov    $0x50450,%edi
    418e5:	e8 13 fe ff ff       	call   416fd <set_gate>
              (uint64_t) gpf_int_handler);
     set_gate(&interrupt_descriptors[INT_PAGEFAULT], X86GATE_INTERRUPT, 0,
@@ -2753,7 +2753,7 @@ void segments_init(void) {
    418f7:	48 b8 00 00 00 00 00 	movabs $0xe0000000000,%rax
    418fe:	0e 00 00 
    41901:	48 89 c6             	mov    %rax,%rsi
-   41904:	bf 60 f4 04 00       	mov    $0x4f460,%edi
+   41904:	bf 60 04 05 00       	mov    $0x50460,%edi
    41909:	e8 ef fd ff ff       	call   416fd <set_gate>
              (uint64_t) pagefault_int_handler);
 
@@ -2774,7 +2774,7 @@ void segments_init(void) {
    41927:	48 89 c2             	mov    %rax,%rdx
    4192a:	8b 45 f8             	mov    -0x8(%rbp),%eax
    4192d:	48 c1 e0 04          	shl    $0x4,%rax
-   41931:	48 05 80 f3 04 00    	add    $0x4f380,%rax
+   41931:	48 05 80 03 05 00    	add    $0x50380,%rax
    41937:	48 89 d1             	mov    %rdx,%rcx
    4193a:	ba 03 00 00 00       	mov    $0x3,%edx
    4193f:	48 be 00 00 00 00 00 	movabs $0xe0000000000,%rsi
@@ -2791,7 +2791,7 @@ void segments_init(void) {
     idt.pseudod_limit = sizeof(interrupt_descriptors) - 1;
    4195b:	66 c7 45 cc ff 0f    	movw   $0xfff,-0x34(%rbp)
     idt.pseudod_base = (uint64_t) interrupt_descriptors;
-   41961:	b8 80 f3 04 00       	mov    $0x4f380,%eax
+   41961:	b8 80 03 05 00       	mov    $0x50380,%eax
    41966:	48 89 45 ce          	mov    %rax,-0x32(%rbp)
 
     // Reload segment pointers
@@ -2841,7 +2841,7 @@ static void interrupt_mask(void) {
    419a8:	48 89 e5             	mov    %rsp,%rbp
    419ab:	48 83 ec 20          	sub    $0x20,%rsp
     uint16_t masked = ~interrupts_enabled;
-   419af:	0f b7 05 2a ea 00 00 	movzwl 0xea2a(%rip),%eax        # 503e0 <interrupts_enabled>
+   419af:	0f b7 05 2a fa 00 00 	movzwl 0xfa2a(%rip),%eax        # 513e0 <interrupts_enabled>
    419b6:	f7 d0                	not    %eax
    419b8:	66 89 45 fe          	mov    %ax,-0x2(%rbp)
     outb(IO_PIC1+1, masked & 0xFF);
@@ -2880,7 +2880,7 @@ void interrupt_init(void) {
    419fb:	48 83 ec 60          	sub    $0x60,%rsp
     // mask all interrupts
     interrupts_enabled = 0;
-   419ff:	66 c7 05 d8 e9 00 00 	movw   $0x0,0xe9d8(%rip)        # 503e0 <interrupts_enabled>
+   419ff:	66 c7 05 d8 f9 00 00 	movw   $0x0,0xf9d8(%rip)        # 513e0 <interrupts_enabled>
    41a06:	00 00 
     interrupt_mask();
    41a08:	e8 9a ff ff ff       	call   419a7 <interrupt_mask>
@@ -3064,15 +3064,15 @@ void timer_init(int rate) {
 }
    41ba4:	90                   	nop
         interrupts_enabled |= 1 << (INT_TIMER - INT_HARDWARE);
-   41ba5:	0f b7 05 34 e8 00 00 	movzwl 0xe834(%rip),%eax        # 503e0 <interrupts_enabled>
+   41ba5:	0f b7 05 34 f8 00 00 	movzwl 0xf834(%rip),%eax        # 513e0 <interrupts_enabled>
    41bac:	83 c8 01             	or     $0x1,%eax
-   41baf:	66 89 05 2a e8 00 00 	mov    %ax,0xe82a(%rip)        # 503e0 <interrupts_enabled>
+   41baf:	66 89 05 2a f8 00 00 	mov    %ax,0xf82a(%rip)        # 513e0 <interrupts_enabled>
    41bb6:	eb 11                	jmp    41bc9 <timer_init+0xc4>
     } else {
         interrupts_enabled &= ~(1 << (INT_TIMER - INT_HARDWARE));
-   41bb8:	0f b7 05 21 e8 00 00 	movzwl 0xe821(%rip),%eax        # 503e0 <interrupts_enabled>
+   41bb8:	0f b7 05 21 f8 00 00 	movzwl 0xf821(%rip),%eax        # 513e0 <interrupts_enabled>
    41bbf:	83 e0 fe             	and    $0xfffffffe,%eax
-   41bc2:	66 89 05 17 e8 00 00 	mov    %ax,0xe817(%rip)        # 503e0 <interrupts_enabled>
+   41bc2:	66 89 05 17 f8 00 00 	mov    %ax,0xf817(%rip)        # 513e0 <interrupts_enabled>
     }
     interrupt_mask();
    41bc9:	e8 d9 fd ff ff       	call   419a7 <interrupt_mask>
@@ -3509,16 +3509,16 @@ int keyboard_readc(void) {
     uint8_t data = inb(KEYBOARD_DATAREG);
    41f41:	88 45 fb             	mov    %al,-0x5(%rbp)
     uint8_t escape = last_escape;
-   41f44:	0f b6 05 97 e4 00 00 	movzbl 0xe497(%rip),%eax        # 503e2 <last_escape.2>
+   41f44:	0f b6 05 97 f4 00 00 	movzbl 0xf497(%rip),%eax        # 513e2 <last_escape.2>
    41f4b:	88 45 fa             	mov    %al,-0x6(%rbp)
     last_escape = 0;
-   41f4e:	c6 05 8d e4 00 00 00 	movb   $0x0,0xe48d(%rip)        # 503e2 <last_escape.2>
+   41f4e:	c6 05 8d f4 00 00 00 	movb   $0x0,0xf48d(%rip)        # 513e2 <last_escape.2>
 
     if (data == 0xE0) {         // mode shift
    41f55:	80 7d fb e0          	cmpb   $0xe0,-0x5(%rbp)
    41f59:	75 11                	jne    41f6c <keyboard_readc+0x6f>
         last_escape = 0x80;
-   41f5b:	c6 05 80 e4 00 00 80 	movb   $0x80,0xe480(%rip)        # 503e2 <last_escape.2>
+   41f5b:	c6 05 80 f4 00 00 80 	movb   $0x80,0xf480(%rip)        # 513e2 <last_escape.2>
         return 0;
    41f62:	b8 00 00 00 00       	mov    $0x0,%eax
    41f67:	e9 a8 01 00 00       	jmp    42114 <keyboard_readc+0x217>
@@ -3550,9 +3550,9 @@ int keyboard_readc(void) {
    41fb5:	89 d0                	mov    %edx,%eax
    41fb7:	f7 d0                	not    %eax
    41fb9:	89 c2                	mov    %eax,%edx
-   41fbb:	0f b6 05 21 e4 00 00 	movzbl 0xe421(%rip),%eax        # 503e3 <modifiers.1>
+   41fbb:	0f b6 05 21 f4 00 00 	movzbl 0xf421(%rip),%eax        # 513e3 <modifiers.1>
    41fc2:	21 d0                	and    %edx,%eax
-   41fc4:	88 05 19 e4 00 00    	mov    %al,0xe419(%rip)        # 503e3 <modifiers.1>
+   41fc4:	88 05 19 f4 00 00    	mov    %al,0xf419(%rip)        # 513e3 <modifiers.1>
         }
         return 0;
    41fca:	b8 00 00 00 00       	mov    $0x0,%eax
@@ -3574,7 +3574,7 @@ int keyboard_readc(void) {
    41ff3:	83 7d fc 7a          	cmpl   $0x7a,-0x4(%rbp)
    41ff7:	7f 51                	jg     4204a <keyboard_readc+0x14d>
         if (modifiers & MOD_CONTROL) {
-   41ff9:	0f b6 05 e3 e3 00 00 	movzbl 0xe3e3(%rip),%eax        # 503e3 <modifiers.1>
+   41ff9:	0f b6 05 e3 f3 00 00 	movzbl 0xf3e3(%rip),%eax        # 513e3 <modifiers.1>
    42000:	0f b6 c0             	movzbl %al,%eax
    42003:	83 e0 02             	and    $0x2,%eax
    42006:	85 c0                	test   %eax,%eax
@@ -3584,12 +3584,12 @@ int keyboard_readc(void) {
         if (modifiers & MOD_CONTROL) {
    4200e:	e9 fd 00 00 00       	jmp    42110 <keyboard_readc+0x213>
         } else if (!(modifiers & MOD_SHIFT) != !(modifiers & MOD_CAPSLOCK)) {
-   42013:	0f b6 05 c9 e3 00 00 	movzbl 0xe3c9(%rip),%eax        # 503e3 <modifiers.1>
+   42013:	0f b6 05 c9 f3 00 00 	movzbl 0xf3c9(%rip),%eax        # 513e3 <modifiers.1>
    4201a:	0f b6 c0             	movzbl %al,%eax
    4201d:	83 e0 01             	and    $0x1,%eax
    42020:	85 c0                	test   %eax,%eax
    42022:	0f 94 c2             	sete   %dl
-   42025:	0f b6 05 b7 e3 00 00 	movzbl 0xe3b7(%rip),%eax        # 503e3 <modifiers.1>
+   42025:	0f b6 05 b7 f3 00 00 	movzbl 0xf3b7(%rip),%eax        # 513e3 <modifiers.1>
    4202c:	0f b6 c0             	movzbl %al,%eax
    4202f:	83 e0 08             	and    $0x8,%eax
    42032:	85 c0                	test   %eax,%eax
@@ -3613,9 +3613,9 @@ int keyboard_readc(void) {
    42062:	d3 e2                	shl    %cl,%edx
    42064:	89 d0                	mov    %edx,%eax
    42066:	89 c2                	mov    %eax,%edx
-   42068:	0f b6 05 74 e3 00 00 	movzbl 0xe374(%rip),%eax        # 503e3 <modifiers.1>
+   42068:	0f b6 05 74 f3 00 00 	movzbl 0xf374(%rip),%eax        # 513e3 <modifiers.1>
    4206f:	31 d0                	xor    %edx,%eax
-   42071:	88 05 6c e3 00 00    	mov    %al,0xe36c(%rip)        # 503e3 <modifiers.1>
+   42071:	88 05 6c f3 00 00    	mov    %al,0xf36c(%rip)        # 513e3 <modifiers.1>
         ch = 0;
    42077:	c7 45 fc 00 00 00 00 	movl   $0x0,-0x4(%rbp)
    4207e:	e9 8e 00 00 00       	jmp    42111 <keyboard_readc+0x214>
@@ -3630,9 +3630,9 @@ int keyboard_readc(void) {
    4209b:	d3 e2                	shl    %cl,%edx
    4209d:	89 d0                	mov    %edx,%eax
    4209f:	89 c2                	mov    %eax,%edx
-   420a1:	0f b6 05 3b e3 00 00 	movzbl 0xe33b(%rip),%eax        # 503e3 <modifiers.1>
+   420a1:	0f b6 05 3b f3 00 00 	movzbl 0xf33b(%rip),%eax        # 513e3 <modifiers.1>
    420a8:	09 d0                	or     %edx,%eax
-   420aa:	88 05 33 e3 00 00    	mov    %al,0xe333(%rip)        # 503e3 <modifiers.1>
+   420aa:	88 05 33 f3 00 00    	mov    %al,0xf333(%rip)        # 513e3 <modifiers.1>
         ch = 0;
    420b0:	c7 45 fc 00 00 00 00 	movl   $0x0,-0x4(%rbp)
    420b7:	eb 58                	jmp    42111 <keyboard_readc+0x214>
@@ -3644,7 +3644,7 @@ int keyboard_readc(void) {
         ch = complex_keymap[ch - CKEY(0)].map[modifiers & 3];
    420c8:	8b 45 fc             	mov    -0x4(%rbp),%eax
    420cb:	8d 50 80             	lea    -0x80(%rax),%edx
-   420ce:	0f b6 05 0e e3 00 00 	movzbl 0xe30e(%rip),%eax        # 503e3 <modifiers.1>
+   420ce:	0f b6 05 0e f3 00 00 	movzbl 0xf30e(%rip),%eax        # 513e3 <modifiers.1>
    420d5:	0f b6 c0             	movzbl %al,%eax
    420d8:	83 e0 03             	and    $0x3,%eax
    420db:	48 98                	cltq   
@@ -3657,7 +3657,7 @@ int keyboard_readc(void) {
     } else if (ch < 0x80 && (modifiers & MOD_CONTROL)) {
    420f0:	83 7d fc 7f          	cmpl   $0x7f,-0x4(%rbp)
    420f4:	7f 1b                	jg     42111 <keyboard_readc+0x214>
-   420f6:	0f b6 05 e6 e2 00 00 	movzbl 0xe2e6(%rip),%eax        # 503e3 <modifiers.1>
+   420f6:	0f b6 05 e6 f2 00 00 	movzbl 0xf2e6(%rip),%eax        # 513e3 <modifiers.1>
    420fd:	0f b6 c0             	movzbl %al,%eax
    42100:	83 e0 02             	and    $0x2,%eax
    42103:	85 c0                	test   %eax,%eax
@@ -3728,7 +3728,7 @@ static void parallel_port_putc(printer* p, unsigned char c, int color) {
     static int initialized;
     (void) p, (void) color;
     if (!initialized) {
-   42175:	8b 05 69 e2 00 00    	mov    0xe269(%rip),%eax        # 503e4 <initialized.0>
+   42175:	8b 05 69 f2 00 00    	mov    0xf269(%rip),%eax        # 513e4 <initialized.0>
    4217b:	85 c0                	test   %eax,%eax
    4217d:	75 1e                	jne    4219d <parallel_port_putc+0x3c>
    4217f:	c7 45 f8 7a 03 00 00 	movl   $0x37a,-0x8(%rbp)
@@ -3741,7 +3741,7 @@ static void parallel_port_putc(printer* p, unsigned char c, int color) {
    42192:	90                   	nop
         outb(IO_PARALLEL1_CONTROL, 0);
         initialized = 1;
-   42193:	c7 05 47 e2 00 00 01 	movl   $0x1,0xe247(%rip)        # 503e4 <initialized.0>
+   42193:	c7 05 47 f2 00 00 01 	movl   $0x1,0xf247(%rip)        # 513e4 <initialized.0>
    4219a:	00 00 00 
     }
 
@@ -4249,43 +4249,43 @@ void virtual_memory_init(void) {
    42620:	48 89 e5             	mov    %rsp,%rbp
    42623:	48 83 ec 20          	sub    $0x20,%rsp
     kernel_pagetable = &kernel_pagetables[0];
-   42627:	48 c7 05 ce e9 00 00 	movq   $0x52000,0xe9ce(%rip)        # 51000 <kernel_pagetable>
-   4262e:	00 20 05 00 
+   42627:	48 c7 05 ce f9 00 00 	movq   $0x53000,0xf9ce(%rip)        # 52000 <kernel_pagetable>
+   4262e:	00 30 05 00 
     memset(kernel_pagetables, 0, sizeof(kernel_pagetables));
    42632:	ba 00 50 00 00       	mov    $0x5000,%edx
    42637:	be 00 00 00 00       	mov    $0x0,%esi
-   4263c:	bf 00 20 05 00       	mov    $0x52000,%edi
+   4263c:	bf 00 30 05 00       	mov    $0x53000,%edi
    42641:	e8 61 16 00 00       	call   43ca7 <memset>
 
     // connect the pagetable pages
     kernel_pagetables[0].entry[0] =
         (x86_64_pageentry_t) &kernel_pagetables[1] | PTE_P | PTE_W | PTE_U;
-   42646:	b8 00 30 05 00       	mov    $0x53000,%eax
+   42646:	b8 00 40 05 00       	mov    $0x54000,%eax
    4264b:	48 83 c8 07          	or     $0x7,%rax
     kernel_pagetables[0].entry[0] =
-   4264f:	48 89 05 aa f9 00 00 	mov    %rax,0xf9aa(%rip)        # 52000 <kernel_pagetables>
+   4264f:	48 89 05 aa 09 01 00 	mov    %rax,0x109aa(%rip)        # 53000 <kernel_pagetables>
     kernel_pagetables[1].entry[0] =
         (x86_64_pageentry_t) &kernel_pagetables[2] | PTE_P | PTE_W | PTE_U;
-   42656:	b8 00 40 05 00       	mov    $0x54000,%eax
+   42656:	b8 00 50 05 00       	mov    $0x55000,%eax
    4265b:	48 83 c8 07          	or     $0x7,%rax
     kernel_pagetables[1].entry[0] =
-   4265f:	48 89 05 9a 09 01 00 	mov    %rax,0x1099a(%rip)        # 53000 <kernel_pagetables+0x1000>
+   4265f:	48 89 05 9a 19 01 00 	mov    %rax,0x1199a(%rip)        # 54000 <kernel_pagetables+0x1000>
     kernel_pagetables[2].entry[0] =
         (x86_64_pageentry_t) &kernel_pagetables[3] | PTE_P | PTE_W | PTE_U;
-   42666:	b8 00 50 05 00       	mov    $0x55000,%eax
+   42666:	b8 00 60 05 00       	mov    $0x56000,%eax
    4266b:	48 83 c8 07          	or     $0x7,%rax
     kernel_pagetables[2].entry[0] =
-   4266f:	48 89 05 8a 19 01 00 	mov    %rax,0x1198a(%rip)        # 54000 <kernel_pagetables+0x2000>
+   4266f:	48 89 05 8a 29 01 00 	mov    %rax,0x1298a(%rip)        # 55000 <kernel_pagetables+0x2000>
     kernel_pagetables[2].entry[1] =
         (x86_64_pageentry_t) &kernel_pagetables[4] | PTE_P | PTE_W | PTE_U;
-   42676:	b8 00 60 05 00       	mov    $0x56000,%eax
+   42676:	b8 00 70 05 00       	mov    $0x57000,%eax
    4267b:	48 83 c8 07          	or     $0x7,%rax
     kernel_pagetables[2].entry[1] =
-   4267f:	48 89 05 82 19 01 00 	mov    %rax,0x11982(%rip)        # 54008 <kernel_pagetables+0x2008>
+   4267f:	48 89 05 82 29 01 00 	mov    %rax,0x12982(%rip)        # 55008 <kernel_pagetables+0x2008>
 
     // identity map the page table
     virtual_memory_map(kernel_pagetable, (uintptr_t) 0, (uintptr_t) 0,
-   42686:	48 8b 05 73 e9 00 00 	mov    0xe973(%rip),%rax        # 51000 <kernel_pagetable>
+   42686:	48 8b 05 73 f9 00 00 	mov    0xf973(%rip),%rax        # 52000 <kernel_pagetable>
    4268d:	41 b8 07 00 00 00    	mov    $0x7,%r8d
    42693:	b9 00 00 20 00       	mov    $0x200000,%ecx
    42698:	ba 00 00 00 00       	mov    $0x0,%edx
@@ -4300,7 +4300,7 @@ void virtual_memory_init(void) {
    426b1:	00 
    426b2:	eb 62                	jmp    42716 <virtual_memory_init+0xf7>
         vamapping vmap = virtual_memory_lookup(kernel_pagetable, addr);
-   426b4:	48 8b 0d 45 e9 00 00 	mov    0xe945(%rip),%rcx        # 51000 <kernel_pagetable>
+   426b4:	48 8b 0d 45 f9 00 00 	mov    0xf945(%rip),%rcx        # 52000 <kernel_pagetable>
    426bb:	48 8d 45 e0          	lea    -0x20(%rbp),%rax
    426bf:	48 8b 55 f8          	mov    -0x8(%rbp),%rdx
    426c3:	48 89 ce             	mov    %rcx,%rsi
@@ -4337,7 +4337,7 @@ void virtual_memory_init(void) {
     // set pointer to this pagetable in the CR3 register
     // set_pagetable also does several checks for a valid pagetable
     set_pagetable(kernel_pagetable);
-   42720:	48 8b 05 d9 e8 00 00 	mov    0xe8d9(%rip),%rax        # 51000 <kernel_pagetable>
+   42720:	48 8b 05 d9 f8 00 00 	mov    0xf8d9(%rip),%rax        # 52000 <kernel_pagetable>
    42727:	48 89 c7             	mov    %rax,%rdi
    4272a:	e8 03 00 00 00       	call   42732 <set_pagetable>
 }
@@ -4384,7 +4384,7 @@ void set_pagetable(x86_64_pagetable* pagetable) {
            == (uintptr_t) default_int_handler);
     assert(virtual_memory_lookup(kernel_pagetable, (uintptr_t) pagetable).pa
    4279a:	48 8b 55 88          	mov    -0x78(%rbp),%rdx
-   4279e:	48 8b 0d 5b e8 00 00 	mov    0xe85b(%rip),%rcx        # 51000 <kernel_pagetable>
+   4279e:	48 8b 0d 5b f8 00 00 	mov    0xf85b(%rip),%rcx        # 52000 <kernel_pagetable>
    427a5:	48 8d 45 b0          	lea    -0x50(%rbp),%rax
    427a9:	48 89 ce             	mov    %rcx,%rsi
    427ac:	48 89 c7             	mov    %rax,%rdi
@@ -4399,7 +4399,7 @@ void set_pagetable(x86_64_pagetable* pagetable) {
    427d0:	e8 8f fd ff ff       	call   42564 <assert_fail>
            == (uintptr_t) pagetable);
     assert(virtual_memory_lookup(pagetable, (uintptr_t) kernel_pagetable).pa
-   427d5:	48 8b 05 24 e8 00 00 	mov    0xe824(%rip),%rax        # 51000 <kernel_pagetable>
+   427d5:	48 8b 05 24 f8 00 00 	mov    0xf824(%rip),%rax        # 52000 <kernel_pagetable>
    427dc:	48 89 c2             	mov    %rax,%rdx
    427df:	48 8d 45 c8          	lea    -0x38(%rbp),%rax
    427e3:	48 8b 4d 88          	mov    -0x78(%rbp),%rcx
@@ -4407,7 +4407,7 @@ void set_pagetable(x86_64_pagetable* pagetable) {
    427ea:	48 89 c7             	mov    %rax,%rdi
    427ed:	e8 34 04 00 00       	call   42c26 <virtual_memory_lookup>
    427f2:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
-   427f6:	48 8b 15 03 e8 00 00 	mov    0xe803(%rip),%rdx        # 51000 <kernel_pagetable>
+   427f6:	48 8b 15 03 f8 00 00 	mov    0xf803(%rip),%rdx        # 52000 <kernel_pagetable>
    427fd:	48 39 d0             	cmp    %rdx,%rax
    42800:	74 14                	je     42816 <set_pagetable+0xe4>
    42802:	ba f8 53 04 00       	mov    $0x453f8,%edx
@@ -5115,7 +5115,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
 
     // restore kernel pagetable
     set_pagetable(kernel_pagetable);
-   42fa4:	48 8b 05 55 e0 00 00 	mov    0xe055(%rip),%rax        # 51000 <kernel_pagetable>
+   42fa4:	48 8b 05 55 f0 00 00 	mov    0xf055(%rip),%rax        # 52000 <kernel_pagetable>
    42fab:	48 89 c7             	mov    %rax,%rdi
    42fae:	e8 7f f7 ff ff       	call   42732 <set_pagetable>
 
@@ -5206,14 +5206,14 @@ static int program_load_segment(proc* p, const elf_program* ph,
    430a5:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    430a9:	48 c1 e8 0c          	shr    $0xc,%rax
    430ad:	48 98                	cltq   
-   430af:	0f b6 84 00 20 ef 04 	movzbl 0x4ef20(%rax,%rax,1),%eax
+   430af:	0f b6 84 00 20 ff 04 	movzbl 0x4ff20(%rax,%rax,1),%eax
    430b6:	00 
    430b7:	84 c0                	test   %al,%al
    430b9:	75 6f                	jne    4312a <palloc+0xb5>
    430bb:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    430bf:	48 c1 e8 0c          	shr    $0xc,%rax
    430c3:	48 98                	cltq   
-   430c5:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   430c5:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    430cc:	00 
    430cd:	84 c0                	test   %al,%al
    430cf:	75 59                	jne    4312a <palloc+0xb5>
@@ -5221,19 +5221,19 @@ static int program_load_segment(proc* p, const elf_program* ph,
    430d5:	48 c1 e8 0c          	shr    $0xc,%rax
    430d9:	89 c2                	mov    %eax,%edx
    430db:	48 63 c2             	movslq %edx,%rax
-   430de:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   430de:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    430e5:	00 
    430e6:	83 c0 01             	add    $0x1,%eax
    430e9:	89 c1                	mov    %eax,%ecx
    430eb:	48 63 c2             	movslq %edx,%rax
-   430ee:	88 8c 00 21 ef 04 00 	mov    %cl,0x4ef21(%rax,%rax,1)
+   430ee:	88 8c 00 21 ff 04 00 	mov    %cl,0x4ff21(%rax,%rax,1)
    430f5:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    430f9:	48 c1 e8 0c          	shr    $0xc,%rax
    430fd:	89 c1                	mov    %eax,%ecx
    430ff:	8b 45 ec             	mov    -0x14(%rbp),%eax
    43102:	89 c2                	mov    %eax,%edx
    43104:	48 63 c1             	movslq %ecx,%rax
-   43107:	88 94 00 20 ef 04 00 	mov    %dl,0x4ef20(%rax,%rax,1)
+   43107:	88 94 00 20 ff 04 00 	mov    %dl,0x4ff20(%rax,%rax,1)
    4310e:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    43112:	ba 00 10 00 00       	mov    $0x1000,%edx
    43117:	be cc 00 00 00       	mov    $0xcc,%esi
@@ -5256,14 +5256,14 @@ static int program_load_segment(proc* p, const elf_program* ph,
 0000000000043158 <palloc_target>:
    43158:	55                   	push   %rbp
    43159:	48 89 e5             	mov    %rsp,%rbp
-   4315c:	48 8b 05 9d 3e 01 00 	mov    0x13e9d(%rip),%rax        # 57000 <palloc_target_proc>
+   4315c:	48 8b 05 9d 4e 01 00 	mov    0x14e9d(%rip),%rax        # 58000 <palloc_target_proc>
    43163:	48 85 c0             	test   %rax,%rax
    43166:	75 14                	jne    4317c <palloc_target+0x24>
    43168:	ba 71 57 04 00       	mov    $0x45771,%edx
    4316d:	be 27 00 00 00       	mov    $0x27,%esi
    43172:	bf 8c 57 04 00       	mov    $0x4578c,%edi
    43177:	e8 e8 f3 ff ff       	call   42564 <assert_fail>
-   4317c:	48 8b 05 7d 3e 01 00 	mov    0x13e7d(%rip),%rax        # 57000 <palloc_target_proc>
+   4317c:	48 8b 05 7d 4e 01 00 	mov    0x14e7d(%rip),%rax        # 58000 <palloc_target_proc>
    43183:	8b 00                	mov    (%rax),%eax
    43185:	89 c7                	mov    %eax,%edi
    43187:	e8 e9 fe ff ff       	call   43075 <palloc>
@@ -5281,7 +5281,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    431a2:	48 c1 e0 04          	shl    $0x4,%rax
    431a6:	48 29 d0             	sub    %rdx,%rax
    431a9:	48 c1 e0 04          	shl    $0x4,%rax
-   431ad:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   431ad:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    431b3:	c7 00 00 00 00 00    	movl   $0x0,(%rax)
    431b9:	48 c7 45 f8 00 00 10 	movq   $0x100000,-0x8(%rbp)
    431c0:	00 
@@ -5292,7 +5292,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    431cf:	48 c1 e0 04          	shl    $0x4,%rax
    431d3:	48 29 d0             	sub    %rdx,%rax
    431d6:	48 c1 e0 04          	shl    $0x4,%rax
-   431da:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   431da:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    431e0:	48 8b 08             	mov    (%rax),%rcx
    431e3:	48 8d 45 b8          	lea    -0x48(%rbp),%rax
    431e7:	48 8b 55 f8          	mov    -0x8(%rbp),%rdx
@@ -5306,25 +5306,25 @@ static int program_load_segment(proc* p, const elf_program* ph,
    43201:	74 68                	je     4326b <process_free+0xdd>
    43203:	8b 45 b8             	mov    -0x48(%rbp),%eax
    43206:	48 63 d0             	movslq %eax,%rdx
-   43209:	0f b6 94 12 21 ef 04 	movzbl 0x4ef21(%rdx,%rdx,1),%edx
+   43209:	0f b6 94 12 21 ff 04 	movzbl 0x4ff21(%rdx,%rdx,1),%edx
    43210:	00 
    43211:	83 ea 01             	sub    $0x1,%edx
    43214:	48 98                	cltq   
-   43216:	88 94 00 21 ef 04 00 	mov    %dl,0x4ef21(%rax,%rax,1)
+   43216:	88 94 00 21 ff 04 00 	mov    %dl,0x4ff21(%rax,%rax,1)
    4321d:	8b 45 b8             	mov    -0x48(%rbp),%eax
    43220:	48 98                	cltq   
-   43222:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   43222:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    43229:	00 
    4322a:	84 c0                	test   %al,%al
    4322c:	75 0f                	jne    4323d <process_free+0xaf>
    4322e:	8b 45 b8             	mov    -0x48(%rbp),%eax
    43231:	48 98                	cltq   
-   43233:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   43233:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    4323a:	00 
    4323b:	eb 2e                	jmp    4326b <process_free+0xdd>
    4323d:	8b 45 b8             	mov    -0x48(%rbp),%eax
    43240:	48 98                	cltq   
-   43242:	0f b6 84 00 20 ef 04 	movzbl 0x4ef20(%rax,%rax,1),%eax
+   43242:	0f b6 84 00 20 ff 04 	movzbl 0x4ff20(%rax,%rax,1),%eax
    43249:	00 
    4324a:	0f be c0             	movsbl %al,%eax
    4324d:	39 45 ac             	cmp    %eax,-0x54(%rbp)
@@ -5346,7 +5346,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    4328a:	48 c1 e0 04          	shl    $0x4,%rax
    4328e:	48 29 d0             	sub    %rdx,%rax
    43291:	48 c1 e0 04          	shl    $0x4,%rax
-   43295:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   43295:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    4329b:	48 8b 00             	mov    (%rax),%rax
    4329e:	48 89 45 f0          	mov    %rax,-0x10(%rbp)
    432a2:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
@@ -5368,7 +5368,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    432e7:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    432eb:	48 c1 e8 0c          	shr    $0xc,%rax
    432ef:	48 98                	cltq   
-   432f1:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   432f1:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    432f8:	00 
    432f9:	3c 01                	cmp    $0x1,%al
    432fb:	74 14                	je     43311 <process_free+0x183>
@@ -5379,17 +5379,17 @@ static int program_load_segment(proc* p, const elf_program* ph,
    43311:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    43315:	48 c1 e8 0c          	shr    $0xc,%rax
    43319:	48 98                	cltq   
-   4331b:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   4331b:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    43322:	00 
    43323:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    43327:	48 c1 e8 0c          	shr    $0xc,%rax
    4332b:	48 98                	cltq   
-   4332d:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   4332d:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    43334:	00 
    43335:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    43339:	48 c1 e8 0c          	shr    $0xc,%rax
    4333d:	48 98                	cltq   
-   4333f:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   4333f:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    43346:	00 
    43347:	3c 01                	cmp    $0x1,%al
    43349:	74 14                	je     4335f <process_free+0x1d1>
@@ -5400,17 +5400,17 @@ static int program_load_segment(proc* p, const elf_program* ph,
    4335f:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    43363:	48 c1 e8 0c          	shr    $0xc,%rax
    43367:	48 98                	cltq   
-   43369:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   43369:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    43370:	00 
    43371:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    43375:	48 c1 e8 0c          	shr    $0xc,%rax
    43379:	48 98                	cltq   
-   4337b:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   4337b:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    43382:	00 
    43383:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
    43387:	48 c1 e8 0c          	shr    $0xc,%rax
    4338b:	48 98                	cltq   
-   4338d:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   4338d:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    43394:	00 
    43395:	3c 01                	cmp    $0x1,%al
    43397:	74 14                	je     433ad <process_free+0x21f>
@@ -5421,17 +5421,17 @@ static int program_load_segment(proc* p, const elf_program* ph,
    433ad:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
    433b1:	48 c1 e8 0c          	shr    $0xc,%rax
    433b5:	48 98                	cltq   
-   433b7:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   433b7:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    433be:	00 
    433bf:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
    433c3:	48 c1 e8 0c          	shr    $0xc,%rax
    433c7:	48 98                	cltq   
-   433c9:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   433c9:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    433d0:	00 
    433d1:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
    433d5:	48 c1 e8 0c          	shr    $0xc,%rax
    433d9:	48 98                	cltq   
-   433db:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   433db:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    433e2:	00 
    433e3:	3c 01                	cmp    $0x1,%al
    433e5:	74 14                	je     433fb <process_free+0x26d>
@@ -5442,17 +5442,17 @@ static int program_load_segment(proc* p, const elf_program* ph,
    433fb:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
    433ff:	48 c1 e8 0c          	shr    $0xc,%rax
    43403:	48 98                	cltq   
-   43405:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   43405:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    4340c:	00 
    4340d:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
    43411:	48 c1 e8 0c          	shr    $0xc,%rax
    43415:	48 98                	cltq   
-   43417:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   43417:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    4341e:	00 
    4341f:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
    43423:	48 c1 e8 0c          	shr    $0xc,%rax
    43427:	48 98                	cltq   
-   43429:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   43429:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    43430:	00 
    43431:	3c 01                	cmp    $0x1,%al
    43433:	74 14                	je     43449 <process_free+0x2bb>
@@ -5463,12 +5463,12 @@ static int program_load_segment(proc* p, const elf_program* ph,
    43449:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
    4344d:	48 c1 e8 0c          	shr    $0xc,%rax
    43451:	48 98                	cltq   
-   43453:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   43453:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    4345a:	00 
    4345b:	48 8b 45 d0          	mov    -0x30(%rbp),%rax
    4345f:	48 c1 e8 0c          	shr    $0xc,%rax
    43463:	48 98                	cltq   
-   43465:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   43465:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    4346c:	00 
    4346d:	90                   	nop
    4346e:	c9                   	leave  
@@ -5514,60 +5514,60 @@ static int program_load_segment(proc* p, const elf_program* ph,
    434ef:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
    434f3:	48 c1 e8 0c          	shr    $0xc,%rax
    434f7:	48 98                	cltq   
-   434f9:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   434f9:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    43500:	00 
    43501:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
    43505:	48 c1 e8 0c          	shr    $0xc,%rax
    43509:	48 98                	cltq   
-   4350b:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   4350b:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    43512:	00 
    43513:	48 83 7d f0 00       	cmpq   $0x0,-0x10(%rbp)
    43518:	74 24                	je     4353e <process_config_tables+0xce>
    4351a:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    4351e:	48 c1 e8 0c          	shr    $0xc,%rax
    43522:	48 98                	cltq   
-   43524:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   43524:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    4352b:	00 
    4352c:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    43530:	48 c1 e8 0c          	shr    $0xc,%rax
    43534:	48 98                	cltq   
-   43536:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   43536:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    4353d:	00 
    4353e:	48 83 7d e8 00       	cmpq   $0x0,-0x18(%rbp)
    43543:	74 24                	je     43569 <process_config_tables+0xf9>
    43545:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    43549:	48 c1 e8 0c          	shr    $0xc,%rax
    4354d:	48 98                	cltq   
-   4354f:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   4354f:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    43556:	00 
    43557:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    4355b:	48 c1 e8 0c          	shr    $0xc,%rax
    4355f:	48 98                	cltq   
-   43561:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   43561:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    43568:	00 
    43569:	48 83 7d e0 00       	cmpq   $0x0,-0x20(%rbp)
    4356e:	74 24                	je     43594 <process_config_tables+0x124>
    43570:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
    43574:	48 c1 e8 0c          	shr    $0xc,%rax
    43578:	48 98                	cltq   
-   4357a:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   4357a:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    43581:	00 
    43582:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
    43586:	48 c1 e8 0c          	shr    $0xc,%rax
    4358a:	48 98                	cltq   
-   4358c:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   4358c:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    43593:	00 
    43594:	48 83 7d d8 00       	cmpq   $0x0,-0x28(%rbp)
    43599:	74 24                	je     435bf <process_config_tables+0x14f>
    4359b:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
    4359f:	48 c1 e8 0c          	shr    $0xc,%rax
    435a3:	48 98                	cltq   
-   435a5:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   435a5:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    435ac:	00 
    435ad:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
    435b1:	48 c1 e8 0c          	shr    $0xc,%rax
    435b5:	48 98                	cltq   
-   435b7:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   435b7:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    435be:	00 
    435bf:	b8 ff ff ff ff       	mov    $0xffffffff,%eax
    435c4:	e9 f3 01 00 00       	jmp    437bc <process_config_tables+0x34c>
@@ -5639,52 +5639,52 @@ static int program_load_segment(proc* p, const elf_program* ph,
    436da:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
    436de:	48 c1 e8 0c          	shr    $0xc,%rax
    436e2:	48 98                	cltq   
-   436e4:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   436e4:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    436eb:	00 
    436ec:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
    436f0:	48 c1 e8 0c          	shr    $0xc,%rax
    436f4:	48 98                	cltq   
-   436f6:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   436f6:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    436fd:	00 
    436fe:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    43702:	48 c1 e8 0c          	shr    $0xc,%rax
    43706:	48 98                	cltq   
-   43708:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   43708:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    4370f:	00 
    43710:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    43714:	48 c1 e8 0c          	shr    $0xc,%rax
    43718:	48 98                	cltq   
-   4371a:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   4371a:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    43721:	00 
    43722:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    43726:	48 c1 e8 0c          	shr    $0xc,%rax
    4372a:	48 98                	cltq   
-   4372c:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   4372c:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    43733:	00 
    43734:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    43738:	48 c1 e8 0c          	shr    $0xc,%rax
    4373c:	48 98                	cltq   
-   4373e:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   4373e:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    43745:	00 
    43746:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
    4374a:	48 c1 e8 0c          	shr    $0xc,%rax
    4374e:	48 98                	cltq   
-   43750:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   43750:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    43757:	00 
    43758:	48 8b 45 e0          	mov    -0x20(%rbp),%rax
    4375c:	48 c1 e8 0c          	shr    $0xc,%rax
    43760:	48 98                	cltq   
-   43762:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   43762:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    43769:	00 
    4376a:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
    4376e:	48 c1 e8 0c          	shr    $0xc,%rax
    43772:	48 98                	cltq   
-   43774:	c6 84 00 20 ef 04 00 	movb   $0x0,0x4ef20(%rax,%rax,1)
+   43774:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    4377b:	00 
    4377c:	48 8b 45 d8          	mov    -0x28(%rbp),%rax
    43780:	48 c1 e8 0c          	shr    $0xc,%rax
    43784:	48 98                	cltq   
-   43786:	c6 84 00 21 ef 04 00 	movb   $0x0,0x4ef21(%rax,%rax,1)
+   43786:	c6 84 00 21 ff 04 00 	movb   $0x0,0x4ff21(%rax,%rax,1)
    4378d:	00 
    4378e:	b8 ff ff ff ff       	mov    $0xffffffff,%eax
    43793:	eb 27                	jmp    437bc <process_config_tables+0x34c>
@@ -5694,7 +5694,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    4379e:	48 c1 e0 04          	shl    $0x4,%rax
    437a2:	48 29 d0             	sub    %rdx,%rax
    437a5:	48 c1 e0 04          	shl    $0x4,%rax
-   437a9:	48 8d 90 e0 e0 04 00 	lea    0x4e0e0(%rax),%rdx
+   437a9:	48 8d 90 e0 f0 04 00 	lea    0x4f0e0(%rax),%rdx
    437b0:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
    437b4:	48 89 02             	mov    %rax,(%rdx)
    437b7:	b8 00 00 00 00       	mov    $0x0,%eax
@@ -5708,7 +5708,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    437c6:	48 89 7d e8          	mov    %rdi,-0x18(%rbp)
    437ca:	89 75 e4             	mov    %esi,-0x1c(%rbp)
    437cd:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
-   437d1:	48 89 05 28 38 01 00 	mov    %rax,0x13828(%rip)        # 57000 <palloc_target_proc>
+   437d1:	48 89 05 28 48 01 00 	mov    %rax,0x14828(%rip)        # 58000 <palloc_target_proc>
    437d8:	8b 4d e4             	mov    -0x1c(%rbp),%ecx
    437db:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    437df:	ba 58 31 04 00       	mov    $0x43158,%edx
@@ -5759,7 +5759,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    43873:	48 c1 e0 04          	shl    $0x4,%rax
    43877:	48 29 d0             	sub    %rdx,%rax
    4387a:	48 c1 e0 04          	shl    $0x4,%rax
-   4387e:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   4387e:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    43884:	8b 00                	mov    (%rax),%eax
    43886:	85 c0                	test   %eax,%eax
    43888:	74 0c                	je     43896 <find_free_pid+0x44>
@@ -5794,7 +5794,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    438db:	48 c1 e0 04          	shl    $0x4,%rax
    438df:	48 29 d0             	sub    %rdx,%rax
    438e2:	48 c1 e0 04          	shl    $0x4,%rax
-   438e6:	48 05 00 e0 04 00    	add    $0x4e000,%rax
+   438e6:	48 05 00 f0 04 00    	add    $0x4f000,%rax
    438ec:	be 00 00 00 00       	mov    $0x0,%esi
    438f1:	48 89 c7             	mov    %rax,%rdi
    438f4:	e8 9d e4 ff ff       	call   41d96 <process_init>
@@ -5815,7 +5815,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    4392b:	48 c1 e0 04          	shl    $0x4,%rax
    4392f:	48 29 d0             	sub    %rdx,%rax
    43932:	48 c1 e0 04          	shl    $0x4,%rax
-   43936:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   43936:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    4393c:	48 8b 08             	mov    (%rax),%rcx
    4393f:	48 8d 45 d0          	lea    -0x30(%rbp),%rax
    43943:	48 8b 55 f8          	mov    -0x8(%rbp),%rdx
@@ -5852,7 +5852,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    439b5:	48 c1 e0 04          	shl    $0x4,%rax
    439b9:	48 29 d0             	sub    %rdx,%rax
    439bc:	48 c1 e0 04          	shl    $0x4,%rax
-   439c0:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   439c0:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    439c6:	48 8b 00             	mov    (%rax),%rax
    439c9:	48 8b 75 f8          	mov    -0x8(%rbp),%rsi
    439cd:	41 b9 00 00 00 00    	mov    $0x0,%r9d
@@ -5880,7 +5880,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    43a20:	48 c1 e0 04          	shl    $0x4,%rax
    43a24:	48 29 d0             	sub    %rdx,%rax
    43a27:	48 c1 e0 04          	shl    $0x4,%rax
-   43a2b:	48 05 e0 e0 04 00    	add    $0x4e0e0,%rax
+   43a2b:	48 05 e0 f0 04 00    	add    $0x4f0e0,%rax
    43a31:	48 8b 00             	mov    (%rax),%rax
    43a34:	48 8b 75 f8          	mov    -0x8(%rbp),%rsi
    43a38:	41 b9 00 00 00 00    	mov    $0x0,%r9d
@@ -5900,12 +5900,12 @@ static int program_load_segment(proc* p, const elf_program* ph,
    43a70:	48 c1 e8 0c          	shr    $0xc,%rax
    43a74:	89 c2                	mov    %eax,%edx
    43a76:	48 63 c2             	movslq %edx,%rax
-   43a79:	0f b6 84 00 21 ef 04 	movzbl 0x4ef21(%rax,%rax,1),%eax
+   43a79:	0f b6 84 00 21 ff 04 	movzbl 0x4ff21(%rax,%rax,1),%eax
    43a80:	00 
    43a81:	83 c0 01             	add    $0x1,%eax
    43a84:	89 c1                	mov    %eax,%ecx
    43a86:	48 63 c2             	movslq %edx,%rax
-   43a89:	88 8c 00 21 ef 04 00 	mov    %cl,0x4ef21(%rax,%rax,1)
+   43a89:	88 8c 00 21 ff 04 00 	mov    %cl,0x4ff21(%rax,%rax,1)
    43a90:	48 81 45 f8 00 10 00 	addq   $0x1000,-0x8(%rbp)
    43a97:	00 
    43a98:	48 81 7d f8 ff ff 2f 	cmpq   $0x2fffff,-0x8(%rbp)
@@ -5919,13 +5919,13 @@ static int program_load_segment(proc* p, const elf_program* ph,
    43ab5:	48 c1 e0 04          	shl    $0x4,%rax
    43ab9:	48 29 d0             	sub    %rdx,%rax
    43abc:	48 c1 e0 04          	shl    $0x4,%rax
-   43ac0:	48 8d b0 10 e0 04 00 	lea    0x4e010(%rax),%rsi
+   43ac0:	48 8d b0 10 f0 04 00 	lea    0x4f010(%rax),%rsi
    43ac7:	48 63 d1             	movslq %ecx,%rdx
    43aca:	48 89 d0             	mov    %rdx,%rax
    43acd:	48 c1 e0 04          	shl    $0x4,%rax
    43ad1:	48 29 d0             	sub    %rdx,%rax
    43ad4:	48 c1 e0 04          	shl    $0x4,%rax
-   43ad8:	48 8d 90 10 e0 04 00 	lea    0x4e010(%rax),%rdx
+   43ad8:	48 8d 90 10 f0 04 00 	lea    0x4f010(%rax),%rdx
    43adf:	48 8d 46 08          	lea    0x8(%rsi),%rax
    43ae3:	48 83 c2 08          	add    $0x8,%rdx
    43ae7:	b9 18 00 00 00       	mov    $0x18,%ecx
@@ -5938,7 +5938,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    43afe:	48 c1 e0 04          	shl    $0x4,%rax
    43b02:	48 29 d0             	sub    %rdx,%rax
    43b05:	48 c1 e0 04          	shl    $0x4,%rax
-   43b09:	48 05 18 e0 04 00    	add    $0x4e018,%rax
+   43b09:	48 05 18 f0 04 00    	add    $0x4f018,%rax
    43b0f:	48 c7 00 00 00 00 00 	movq   $0x0,(%rax)
    43b16:	8b 45 f4             	mov    -0xc(%rbp),%eax
    43b19:	48 63 d0             	movslq %eax,%rdx
@@ -5946,7 +5946,7 @@ static int program_load_segment(proc* p, const elf_program* ph,
    43b1f:	48 c1 e0 04          	shl    $0x4,%rax
    43b23:	48 29 d0             	sub    %rdx,%rax
    43b26:	48 c1 e0 04          	shl    $0x4,%rax
-   43b2a:	48 05 d8 e0 04 00    	add    $0x4e0d8,%rax
+   43b2a:	48 05 d8 f0 04 00    	add    $0x4f0d8,%rax
    43b30:	c7 00 01 00 00 00    	movl   $0x1,(%rax)
    43b36:	8b 45 f4             	mov    -0xc(%rbp),%eax
    43b39:	c9                   	leave  
@@ -6318,7 +6318,7 @@ int rand(void) {
    43e64:	55                   	push   %rbp
    43e65:	48 89 e5             	mov    %rsp,%rbp
     if (!rand_seed_set) {
-   43e68:	8b 05 9a 31 01 00    	mov    0x1319a(%rip),%eax        # 57008 <rand_seed_set>
+   43e68:	8b 05 9a 41 01 00    	mov    0x1419a(%rip),%eax        # 58008 <rand_seed_set>
    43e6e:	85 c0                	test   %eax,%eax
    43e70:	75 0a                	jne    43e7c <rand+0x18>
         srand(819234718U);
@@ -6326,12 +6326,12 @@ int rand(void) {
    43e77:	e8 24 00 00 00       	call   43ea0 <srand>
     }
     rand_seed = rand_seed * 1664525U + 1013904223U;
-   43e7c:	8b 05 8a 31 01 00    	mov    0x1318a(%rip),%eax        # 5700c <rand_seed>
+   43e7c:	8b 05 8a 41 01 00    	mov    0x1418a(%rip),%eax        # 5800c <rand_seed>
    43e82:	69 c0 0d 66 19 00    	imul   $0x19660d,%eax,%eax
    43e88:	05 5f f3 6e 3c       	add    $0x3c6ef35f,%eax
-   43e8d:	89 05 79 31 01 00    	mov    %eax,0x13179(%rip)        # 5700c <rand_seed>
+   43e8d:	89 05 79 41 01 00    	mov    %eax,0x14179(%rip)        # 5800c <rand_seed>
     return rand_seed & RAND_MAX;
-   43e93:	8b 05 73 31 01 00    	mov    0x13173(%rip),%eax        # 5700c <rand_seed>
+   43e93:	8b 05 73 41 01 00    	mov    0x14173(%rip),%eax        # 5800c <rand_seed>
    43e99:	25 ff ff ff 7f       	and    $0x7fffffff,%eax
 }
    43e9e:	5d                   	pop    %rbp
@@ -6346,9 +6346,9 @@ void srand(unsigned seed) {
    43ea8:	89 7d fc             	mov    %edi,-0x4(%rbp)
     rand_seed = seed;
    43eab:	8b 45 fc             	mov    -0x4(%rbp),%eax
-   43eae:	89 05 58 31 01 00    	mov    %eax,0x13158(%rip)        # 5700c <rand_seed>
+   43eae:	89 05 58 41 01 00    	mov    %eax,0x14158(%rip)        # 5800c <rand_seed>
     rand_seed_set = 1;
-   43eb4:	c7 05 4a 31 01 00 01 	movl   $0x1,0x1314a(%rip)        # 57008 <rand_seed_set>
+   43eb4:	c7 05 4a 41 01 00 01 	movl   $0x1,0x1414a(%rip)        # 58008 <rand_seed_set>
    43ebb:	00 00 00 
 }
    43ebe:	90                   	nop

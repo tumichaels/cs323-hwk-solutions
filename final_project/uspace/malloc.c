@@ -1,10 +1,10 @@
 #include "malloc.h"
 
 // size and alignment macros
-#define	ALIGNMENT 16 // every address is 16 byte aligned, it's also my word sizw
+#define	ALIGNMENT 16 // every address is 16 byte aligned, 
 #define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
 
-#define MIN_PAYLOAD_SIZE 32
+#define MIN_PAYLOAD_SIZE 24	// 16 bytes for 2 addresses, 8 bytes for footer
 
 #define CHUNK_SIZE (1 << 14)
 #define CHUNK_ALIGN(size) (((size) + (CHUNK_SIZE - 1)) & ~(CHUNK_SIZE - 1)) // request memory in multiples of CHUNK_SIZE
@@ -12,14 +12,19 @@
 #define OVERHEAD (sizeof(block_header))
 
 // macros for working with raw pointer
-#define GET_SIZE(p) ((block_header *) (p))->size
-#define GET_ALLOC(p) ((block_header *) (p))->allocated
+#define GET(p) (*(size_t *)(p))
+
+#define GET_ALLOC(p) (GET(p) & 0x1)		// by packing these more densely, size and alloc are now just bit strings,
+#define GET_SIZE(p) (GET(p) & ~0xF)
+
+#define PUT(p, val) (GET(p) = (val))	// these help us set the size and alloc
+#define PACK(size, alloc) ((size) | (alloc))
 
 // macros for working with payload pointers
 #define HDRP(bp) ((char *) (bp) - sizeof(block_header))
 #define NEXT_BLKP(bp) ((char *) (bp) + GET_SIZE(HDRP(bp)))
 
-// you'll use these on payload pointers, but they're only meaninigufl on free pointers
+// you'll use these on payload pointers, but they're only meaningful on free pointers
 #define FTRP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp)) - sizeof(block_header) - sizeof(block_footer))
 #define PREV_BLKP(bp) ((char*)(bp) - GET_SIZE(HDRP(bp) - sizeof(block_footer)))
 
@@ -33,15 +38,8 @@ int initialized_heap;
 
 void *free_list;
 
-typedef struct {
-	size_t size;
-	int allocated;
-} block_header;
-
-typedef struct {
-	size_t size;
-	int filler;
-} block_footer;
+typedef size_t block_header;
+typedef size_t block_footer;
 
 // annoyingly, even with lazy allocation, or perhaps because of it, the moment
 // we start filling out the headers, we instantly use up the entire page worth
@@ -51,17 +49,14 @@ void heap_init(void) {
 
 	// prologue block
 	void *prologue_block;
-	sbrk(sizeof(block_header));
+	sbrk(sizeof(block_header) + sizeof(block_header));
 	prologue_block = sbrk(sizeof(block_footer));
-
-	GET_SIZE(HDRP(prologue_block)) = sizeof(block_header) + sizeof(block_footer);
-	GET_ALLOC(HDRP(prologue_block)) = 1;
-	GET_SIZE(FTRP(prologue_block)) = sizeof(block_header) + sizeof(block_footer);
+	PUT(HDRP(prologue_block), PACK(sizeof(block_header) + sizeof(block_footer), 1));	
+	PUT(FTRP(prologue_block), PACK(sizeof(block_header) + sizeof(block_footer), 1));	
 
 	// terminal block
 	sbrk(sizeof(block_header));
-	GET_SIZE(HDRP(NEXT_BLKP(prologue_block))) = 0;
-	GET_ALLOC(HDRP(NEXT_BLKP(prologue_block))) = 0;
+	PUT(HDRP(NEXT_BLKP(prologue_block)), PACK(0, 1));	
 
 	free_list = NULL;
 
@@ -73,10 +68,10 @@ void free(void *firstbyte) {
 		return;
 
 	// setup free things: alloc, list ptrs, footer
-	GET_ALLOC(HDRP(firstbyte)) = 0;
+	PUT(HDRP(firstbyte), PACK(GET_SIZE(HDRP(firstbyte)), 0));	
 	NEXT_FPTR(firstbyte) = free_list;
 	PREV_FPTR(firstbyte) = NULL;
-	GET_SIZE(FTRP(firstbyte)) = GET_SIZE(HDRP(firstbyte));
+	PUT(FTRP(firstbyte), PACK(GET_SIZE(HDRP(firstbyte)), 0));	
 
 	// add to free_list
 	PREV_FPTR(free_list) = firstbyte;
@@ -99,20 +94,19 @@ int extend(size_t new_size) {
 		return -1;
 
 	// setup pointer
-	GET_SIZE(HDRP(bp)) = chunk_aligned_size;
-	GET_ALLOC(HDRP(bp)) = 0;
+	PUT(HDRP(bp), PACK(GET_SIZE(HDRP(bp)), 0));	
 	NEXT_FPTR(bp) = free_list;	
 	PREV_FPTR(bp) = NULL;
-	GET_SIZE(FTRP(bp)) = GET_SIZE(HDRP(bp));
-
+	PUT(FTRP(bp), PACK(GET_SIZE(HDRP(bp)), 0));	
+	
 	// add to head of free_list
 	if (free_list)
 		PREV_FPTR(free_list) = bp;
 	free_list = bp;
 
 	// update terminal block
-	GET_SIZE(HDRP(NEXT_BLKP(bp))) = 0;
-	GET_ALLOC(HDRP(NEXT_BLKP(bp))) = 1;
+	PUT(HDRP(NEXT_BLKP(bp)), PACK(0, 1));	
+
 	return 0;
 }
 
@@ -122,14 +116,16 @@ void set_allocated(void *bp, size_t size) {
 	size_t extra_size = GET_SIZE(HDRP(bp)) - size;
 
 	if (extra_size > OVERHEAD + MIN_PAYLOAD_SIZE) {
-		GET_SIZE(HDRP(bp)) = size;
-		void *leftover_mem_ptr = NEXT_BLKP(bp);
+		PUT(HDRP(bp), PACK(size, 1));
 
-		GET_SIZE(HDRP(leftover_mem_ptr)) = extra_size;
-		GET_ALLOC(HDRP(leftover_mem_ptr)) = 0;
-		NEXT_FPTR(leftover_mem_ptr) = NEXT_FPTR(bp); // pointers to the nearby free blocks
+		void *leftover_mem_ptr = NEXT_BLKP(bp);
+		mem_tog(1);
+			app_printf(0x700,"%p ", bp);	
+
+		PUT(HDRP(leftover_mem_ptr), PACK(extra_size, 0));	
+		NEXT_FPTR(leftover_mem_ptr) = NEXT_FPTR(bp); // pointers to the next free blocks
 		PREV_FPTR(leftover_mem_ptr) = PREV_FPTR(bp);
-		GET_SIZE(FTRP(leftover_mem_ptr)) = GET_SIZE(HDRP(leftover_mem_ptr));
+		PUT(FTRP(leftover_mem_ptr), PACK(extra_size, 0));	
 
 		// update the free list
 		if (free_list == bp)
@@ -137,6 +133,7 @@ void set_allocated(void *bp, size_t size) {
 
 		if (PREV_FPTR(bp))
 			NEXT_FPTR(PREV_FPTR(bp)) = leftover_mem_ptr; // this the free block that went to bp
+
 		if (NEXT_FPTR(bp))
 			PREV_FPTR(NEXT_FPTR(bp)) = leftover_mem_ptr; // this is the free block that came from bp
 								    
@@ -150,9 +147,9 @@ void set_allocated(void *bp, size_t size) {
 			NEXT_FPTR(PREV_FPTR(bp)) = NEXT_FPTR(bp);
 		if (NEXT_FPTR(bp))
 			PREV_FPTR(NEXT_FPTR(bp)) = PREV_FPTR(bp); 
+
+		PUT(HDRP(bp), PACK(GET_SIZE(HDRP(bp)), 1));	
 	}
-	
-	GET_ALLOC(HDRP(bp)) = 1;
 }
 
 void *malloc(uint64_t numbytes) {
@@ -165,6 +162,7 @@ void *malloc(uint64_t numbytes) {
 	size_t aligned_size = (OVERHEAD + MIN_PAYLOAD_SIZE > ALIGN(numbytes + OVERHEAD)) 
 						? OVERHEAD + MIN_PAYLOAD_SIZE 
 						: ALIGN(numbytes + OVERHEAD);
+
 
 	void *bp = free_list;
 	while (bp) {
@@ -187,13 +185,14 @@ void *malloc(uint64_t numbytes) {
 
 void *calloc(uint64_t num, uint64_t sz) {
 	void *bp = malloc(num * sz);
-	memset(bp, 0, num * sz);
+	if (bp)							// protect against num=0 or size=0
+		memset(bp, 0, num * sz);
 	return bp;
 }
 
 void *realloc(void *ptr, uint64_t sz) {
-	// first check if there's enough space in the block already
-	if (GET_SIZE(HDRP(ptr)) >= sz)
+	// first check if there's enough space in the block already (and that it's actually valid ptr)
+	if (ptr && GET_SIZE(HDRP(ptr)) >= sz)
 		return ptr;
 
 	// else find or add a big enough block, which is what malloc does
@@ -219,8 +218,8 @@ void defrag() {
 			if (NEXT_FPTR(next_block)) 
 				PREV_FPTR(NEXT_FPTR(next_block)) = PREV_FPTR(next_block);
 
-			GET_SIZE(HDRP(fp)) = GET_SIZE(HDRP(fp)) + GET_SIZE(HDRP(next_block));
-			GET_SIZE(FTRP(fp)) = GET_SIZE(HDRP(fp));
+			PUT(HDRP(fp), PACK(GET_SIZE(HDRP(fp)) + GET_SIZE(HDRP(next_block)), 0));	
+			PUT(FTRP(fp), PACK(GET_SIZE(HDRP(fp)) + GET_SIZE(HDRP(next_block)), 0));	
 		}
 
 		void *prev_block = PREV_BLKP(fp);
@@ -240,8 +239,8 @@ void defrag() {
 			if (NEXT_FPTR(fp)) 
 				PREV_FPTR(NEXT_FPTR(fp)) = PREV_FPTR(fp);
 
-			GET_SIZE(HDRP(prev_block)) = GET_SIZE(HDRP(prev_block)) + GET_SIZE(HDRP(fp));
-			GET_SIZE(FTRP(prev_block)) = GET_SIZE(HDRP(prev_block));
+			PUT(HDRP(prev_block), PACK(GET_SIZE(HDRP(prev_block)) + GET_SIZE(HDRP(fp)), 0));	
+			PUT(FTRP(prev_block), PACK(GET_SIZE(HDRP(prev_block)) + GET_SIZE(HDRP(fp)), 0));	
 		}
 
 		fp = NEXT_FPTR(fp);

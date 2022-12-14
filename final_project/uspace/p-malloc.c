@@ -20,11 +20,14 @@ void process_main(void) {
 
     // Allocate heap pages until (1) hit the stack (out of address space)
     // or (2) allocation fails (out of physical memory).
+    int ct = 0;
     while (1) {
 	if ((rand() % ALLOC_SLOWDOWN) < p) {
 	    void * ret = malloc(PAGESIZE);
+	    ct ++;
 	    if(ret == NULL)
 		break;
+	    app_printf(0x700, "%d\n", ct);
 	    *((int*)ret) = p;       // check we have write access
 	}
 	yield();

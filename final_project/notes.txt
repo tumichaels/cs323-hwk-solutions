@@ -32,11 +32,19 @@ https://stackoverflow.com/questions/65440115/does-brk-and-sbrk-round-the-program
 1. we're going to be copying large parts of this from the canvas files
 
 2. first thing we're going to make is the header
-    - the header is 16 bytes, we're also going to follow the four 16 byte word strategy
-    - we may be able to get away with less
+    - the header is 16 bytes
 
 3. we have also implemented the footer
+    - the foot is also 16 bytes
 
-4. as a side note, you have to remember to always malloc a minimum of 4 words (might be 3)
+4. we'll be leaving the blocks 16 byte aligned
 
-5. we'll extend by 1/2 a page each time there's no space
+5. we will use the free-block footer strategy
+
+6. based on this, we know the minimum alloc'able size:
+    - 16 byte header
+    - 2*8 byte pointers
+    - 16 byte footer
+    - total = 48 bytes -- 16 header, 32 useable space
+
+7. this also implies "useable" size will always >= 32

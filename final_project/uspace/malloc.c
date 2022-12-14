@@ -92,9 +92,11 @@ void free(void *firstbyte) {
 //	the reason alloating in units of chunks (4 pages) isn't super wasteful
 //	is due to lazy allocation -- the memory is available for the user
 //	but won't be actually assigned to them until they try to write to it
-void extend(size_t new_size) {
+int extend(size_t new_size) {
 	size_t chunk_aligned_size = CHUNK_ALIGN(new_size); 
 	void *bp = sbrk(chunk_aligned_size);
+	if (bp == (void *)-1)
+		return -1;
 
 	// setup pointer
 	GET_SIZE(HDRP(bp)) = chunk_aligned_size;
@@ -111,6 +113,7 @@ void extend(size_t new_size) {
 	// update terminal block
 	GET_SIZE(HDRP(NEXT_BLKP(bp))) = 0;
 	GET_ALLOC(HDRP(NEXT_BLKP(bp))) = 1;
+	return 0;
 }
 
 // remember all the sizes are always aligned, so I should be safe
@@ -175,10 +178,9 @@ void *malloc(uint64_t numbytes) {
 
 	// no preexisting space big enough, so only space is at top of stack
 	bp = sbrk(0);
-	if (bp == (void *)0xffffffffffffffef){
-		panic("I'm panicking");
-		return NULL;}
-	extend(aligned_size);
+	if (extend(aligned_size)) {
+		return NULL;
+	}
 	set_allocated(bp, aligned_size);
     return bp;
 }

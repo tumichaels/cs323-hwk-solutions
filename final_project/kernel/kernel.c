@@ -195,7 +195,7 @@ int sbrk(proc *p, intptr_t difference) {
     // TODO : Your code here -> done
     uintptr_t oldbrk = p->program_break;
     if (brk(p, p->program_break + difference)) {
-		p->p_registers.reg_rax = -1;
+		p->p_registers.reg_rax = (uint64_t)((void *)-1);
 		log_printf("oops got here\n");
 	    return -1;
     }
@@ -328,14 +328,14 @@ void exception(x86_64_registers* reg) {
         case INT_SYS_BRK:
             {
                 // TODO : Your code here
-		reg->reg_rax = brk(current, reg->reg_rdi);
+				brk(current, reg->reg_rdi);
 		break;
             }
 
         case INT_SYS_SBRK:
             {
                 // TODO : Your code here
-		reg->reg_rax = sbrk(current, reg->reg_rdi);
+				sbrk(current, reg->reg_rdi);
                 break;
             }
 	case INT_SYS_PAGE_ALLOC:

@@ -188,7 +188,7 @@ void *malloc(uint64_t numbytes) {
 
 void *calloc(uint64_t num, uint64_t sz) {
 	void *bp = malloc(num * sz);
-	if (bp)							// protect against num=0 or size=0
+	if (bp)							// protect against num=0 or size=0 or just no memory
 		memset(bp, 0, num * sz);
 	return bp;
 }

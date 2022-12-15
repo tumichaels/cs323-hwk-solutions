@@ -225,26 +225,8 @@ void defrag() {
 			PUT(FTRP(fp), PACK(GET_SIZE(HDRP(fp)) + GET_SIZE(HDRP(next_block)), 0));	
 		}
 
-		void *prev_block = PREV_BLKP(fp);
-		// this is an error check to prevent against sparse arrays
-		if (GET_SIZE(HDRP(prev_block)) != GET_SIZE(FTRP(prev_block))){
-			fp = NEXT_FPTR(fp);
-			continue;
-		}
-
-		if (!GET_ALLOC(HDRP(prev_block))) {
-			if (free_list == fp)
-				free_list = NEXT_FPTR(fp);
-
-			if (PREV_FPTR(fp)) 
-				NEXT_FPTR(PREV_FPTR(fp)) = NEXT_FPTR(fp);
-
-			if (NEXT_FPTR(fp)) 
-				PREV_FPTR(NEXT_FPTR(fp)) = PREV_FPTR(fp);
-
-			PUT(HDRP(prev_block), PACK(GET_SIZE(HDRP(prev_block)) + GET_SIZE(HDRP(fp)), 0));	
-			PUT(FTRP(prev_block), PACK(GET_SIZE(HDRP(prev_block)) + GET_SIZE(HDRP(fp)), 0));	
-		}
+		// you only need to check the block after, because if the block before is free, you'll
+		// bet there by traversing the free list
 
 		fp = NEXT_FPTR(fp);
 	}
@@ -266,10 +248,11 @@ void defrag() {
 #define PARENT(x) ((x-1)/2)
 
 void sift_down(void **arr, size_t pos, size_t arr_len) {
-	while(LEFT_CHILD(pos) < arr_len) {
+	while (LEFT_CHILD(pos) < arr_len) {
 		size_t smaller = LEFT_CHILD(pos);
-		if (RIGHT_CHILD(pos) < arr_len && GET_SIZE(HDRP(arr[RIGHT_CHILD(pos)])) < GET_SIZE(HDRP(arr[LEFT_CHILD(pos)]))) 
+		if (RIGHT_CHILD(pos) < arr_len && GET_SIZE(HDRP(arr[RIGHT_CHILD(pos)])) < GET_SIZE(HDRP(arr[LEFT_CHILD(pos)]))){
 			smaller = RIGHT_CHILD(pos);
+		}
 
 		if (GET_SIZE(HDRP(arr[pos])) > GET_SIZE(HDRP(arr[smaller]))) {
 			void *temp = arr[pos];
@@ -277,17 +260,15 @@ void sift_down(void **arr, size_t pos, size_t arr_len) {
 			arr[smaller] = temp;
 			pos = smaller;
 		}
-		else{
+		else {
 			break;
 		}
-	}	
+	}
 }
 
 void heapify(void **arr, size_t arr_len) {
-	int index = arr_len - 1;
-	while(index >= 0) {
-		sift_down(arr, index, arr_len);	
-		index--;
+	for (int i = arr_len - 1; i >= 0; i--) {
+		sift_down(arr, i, arr_len);
 	}
 }
 
@@ -295,7 +276,7 @@ void heapsort(void **arr, size_t arr_len) {
 	heapify(arr, arr_len);
 	if (arr_len == 0)
 		return;
-	for (size_t i = arr_len - 1; i > 1; i--) {
+	for (int i = arr_len - 1; i >= 0; i--) {
 		void *temp = arr[0];
 		arr[0] = arr[i];
 		arr[i] = temp;
@@ -344,6 +325,10 @@ int heap_info(heap_info_struct *info) {
 		bp = NEXT_BLKP(bp);
 	}
 
+	app_printf(0xa00, "heap_info print:\n");
+	for(int  i = 0 ; i < info->num_allocs; i++){
+		app_printf(0x700, "    ptr: %p, size: 0x%lx\n", info->ptr_array[i], info->size_array[i]);;
+	}
 	// we just need to sort the arrays...
 	// we'll use heapsort
 	heapsort(info->ptr_array, info->num_allocs);

@@ -47,6 +47,9 @@ void process_main(void) {
 	void *ptr1 = malloc(8);
 	void *ptr2 = malloc(16);
 	void *ptr3 = malloc(24);
+	void *ptr4 = malloc(32);
+	free(ptr4);
+	defrag();
 
 	struct heap_info_struct s1;
 	heap_info(&s1);
@@ -56,6 +59,10 @@ void process_main(void) {
 	for (int i = 0; i < s1.num_allocs; i++) {
 		app_printf(0x700, "    alloc'd region %d: %p    size: 0x%lx\n", i+1, s1.ptr_array[i], s1.size_array[i]);
 	}
+	app_printf(0x700, "free space: 0x%x\n", s1.free_space);
+	app_printf(0x700, "largest free chunk: 0x%x\n", s1.largest_free_chunk);
+	app_printf(0x700, "extend chunk size: 0x%x\n", (1<<14));
+	app_printf(0x700, "extend chunk size minus allocs: 0x%x\n", (1<<14) -0x30 - 0x20 - 0x20 - 0x20);
 	
 
     TEST_PASS();

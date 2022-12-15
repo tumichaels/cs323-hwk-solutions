@@ -11,6 +11,7 @@ void process_main(void) {
 
     // alloc int array of 10 elements
     int* array = (int *)malloc(sizeof(int) * 10);
+    app_printf(0x800, "array 1: %p\n", array);
     
     // set array elements
     for(int  i = 0 ; i < 10; i++){
@@ -19,6 +20,7 @@ void process_main(void) {
 
     // realloc array to size 20
     array = (int*)realloc(array, sizeof(int) * 20);
+    app_printf(0x800, "realloc'd array 1: %p\n", array);
 
 
     // check if contents are same
@@ -28,6 +30,7 @@ void process_main(void) {
 
     // alloc int array of size 30 using calloc
     int * array2 = (int *)calloc(30, sizeof(int));
+    app_printf(0x900, "array 2: %p\n", array2);
 
     // assert array[i] == 0
     for(int i = 0 ; i < 30; i++){
@@ -37,8 +40,12 @@ void process_main(void) {
     heap_info_struct info;
     if(heap_info(&info) == 0){
 	// check if allocations are in sorted order
+	app_printf(0x700, "alloc'd regions:\n");
+	for(int  i = 0 ; i < info.num_allocs; i++){
+		app_printf(0x700, "    ptr: %p, size: 0x%lx\n", info.ptr_array[i], info.size_array[i]);;
+	}
 	for(int  i = 1 ; i < info.num_allocs; i++){
-	    assert(info.size_array[i] < info.size_array[i-1]);
+	    assert(info.size_array[i] <= info.size_array[i-1]);
 	}
     }
     else{

@@ -191,12 +191,11 @@ int brk(proc *p, uintptr_t addr) {
 
 
 int sbrk(proc *p, intptr_t difference) {
-	// log_printf("sbrk was used\n");
+	// log_printf("sbsbrk(ALIGN(info->num_allocs * sizeof(void *) + OVERHEAD));rk was used\n");
     // TODO : Your code here -> done
     uintptr_t oldbrk = p->program_break;
     if (brk(p, p->program_break + difference)) {
-		p->p_registers.reg_rax = (uint64_t)((void *)-1);
-		log_printf("oops got here\n");
+	    // brk already sets registers to -1 on failure
 	    return -1;
     }
     p->p_registers.reg_rax = oldbrk;

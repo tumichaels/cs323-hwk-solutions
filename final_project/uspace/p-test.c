@@ -33,15 +33,30 @@ void process_main(void) {
 //    }
     
 
-    void *ptr = malloc(PAGESIZE);
-    malloc(PAGESIZE);
-    malloc(PAGESIZE);
-    ptr = malloc(PAGESIZE);
-    *((int*)ptr) = 1;
+//    void *ptr = malloc(PAGESIZE);
+//    malloc(PAGESIZE);
+//    malloc(PAGESIZE);
+//    ptr = malloc(PAGESIZE);
+//    *((int*)ptr) = 1;
+//	
+//    if ((*((size_t *)((uintptr_t)ptr - 8)) & ~0xF ) == (0x50))
+//	    panic("success!");
+//
+
+	mem_tog(0);
+	void *ptr1 = malloc(8);
+	void *ptr2 = malloc(16);
+	void *ptr3 = malloc(24);
+
+	struct heap_info_struct s1;
+	heap_info(&s1);
+
+	app_printf(0x700, "number of allocs: %d\n", s1.num_allocs);
+	app_printf(0x700, "alloc list: \n");
+	for (int i = 0; i < s1.num_allocs; i++) {
+		app_printf(0x700, "    alloc'd region %d: %p    size: 0x%lx\n", i+1, s1.ptr_array[i], s1.size_array[i]);
+	}
 	
-    if ((*((size_t *)((uintptr_t)ptr - 8)) & ~0xF ) == (0x50))
-	    panic("success!");
 
     TEST_PASS();
-    mem_tog(1);
 }

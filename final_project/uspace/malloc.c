@@ -14,7 +14,7 @@
 // macros for working with raw pointer
 #define GET(p) (*(size_t *)(p))
 
-#define GET_ALLOC(p) (GET(p) & 0x1)		// by packing these more densely, size and alloc are now just bit strings,
+#define GET_ALLOC(p) (GET(p) & 0x1)		// by packing these more densely, this is becomes a value
 #define GET_SIZE(p) (GET(p) & ~0xF)
 
 #define PUT(p, val) (GET(p) = (val))	// these help us set the size and alloc
@@ -36,10 +36,13 @@
 
 int initialized_heap;
 
+void *prologue_block;
 void *free_list;
 
 typedef size_t block_header;
 typedef size_t block_footer;
+
+size_t num_allocs;
 
 // annoyingly, even with lazy allocation, or perhaps because of it, the moment
 // we start filling out the headers, we instantly use up the entire page worth
@@ -48,7 +51,6 @@ typedef size_t block_footer;
 void heap_init(void) {
 
 	// prologue block
-	void *prologue_block;
 	sbrk(sizeof(block_header) + sizeof(block_header));
 	prologue_block = sbrk(sizeof(block_footer));
 	PUT(HDRP(prologue_block), PACK(sizeof(block_header) + sizeof(block_footer), 1));	
@@ -77,6 +79,8 @@ void free(void *firstbyte) {
 	PREV_FPTR(free_list) = firstbyte;
 	free_list = firstbyte;
 
+	num_allocs--;
+
 	return;
 }
 
@@ -84,7 +88,7 @@ void free(void *firstbyte) {
 //	we call extend inside malloc, so it should only ever be
 //	called with new_size >= MIN_PAYLOAD_SIZE 
 //
-//	the reason alloating in units of chunks (4 pages) isn't super wasteful
+//	the reason allocating in units of chunks (4 pages) isn't super wasteful
 //	is due to lazy allocation -- the memory is available for the user
 //	but won't be actually assigned to them until they try to write to it
 int extend(size_t new_size) {
@@ -94,10 +98,10 @@ int extend(size_t new_size) {
 		return -1;
 
 	// setup pointer
-	PUT(HDRP(bp), PACK(GET_SIZE(HDRP(bp)), 0));	
+	PUT(HDRP(bp), PACK(chunk_aligned_size, 0));	
 	NEXT_FPTR(bp) = free_list;	
 	PREV_FPTR(bp) = NULL;
-	PUT(FTRP(bp), PACK(GET_SIZE(HDRP(bp)), 0));	
+	PUT(FTRP(bp), PACK(chunk_aligned_size, 0));	
 	
 	// add to head of free_list
 	if (free_list)
@@ -119,8 +123,6 @@ void set_allocated(void *bp, size_t size) {
 		PUT(HDRP(bp), PACK(size, 1));
 
 		void *leftover_mem_ptr = NEXT_BLKP(bp);
-		mem_tog(1);
-			app_printf(0x700,"%p ", bp);	
 
 		PUT(HDRP(leftover_mem_ptr), PACK(extra_size, 0));	
 		NEXT_FPTR(leftover_mem_ptr) = NEXT_FPTR(bp); // pointers to the next free blocks
@@ -162,12 +164,12 @@ void *malloc(uint64_t numbytes) {
 	size_t aligned_size = (OVERHEAD + MIN_PAYLOAD_SIZE > ALIGN(numbytes + OVERHEAD)) 
 						? OVERHEAD + MIN_PAYLOAD_SIZE 
 						: ALIGN(numbytes + OVERHEAD);
-
-
+	
 	void *bp = free_list;
 	while (bp) {
 		if (GET_SIZE(HDRP(bp)) >= aligned_size) {
 			set_allocated(bp, aligned_size);
+			num_allocs++;
 			return bp;
 		}
 
@@ -180,6 +182,7 @@ void *malloc(uint64_t numbytes) {
 		return NULL;
 	}
 	set_allocated(bp, aligned_size);
+	num_allocs++;
     return bp;
 }
 
@@ -247,6 +250,117 @@ void defrag() {
 	}
 }
 
+// to avoid really messing with our malloc implementation, we're going to 
+// have to allocate both arrays using sbrk, because if we use malloc/free
+// then we're changing the free list / alloc'd blocks while we're trying
+// to measure them, which seems like a huuuuuge headache
+//
+// there's a super pathological case where you check which one is alloc'd each
+// time and its always these arrays
+
+// it's also easier to just collect all the alloc'd blocks first
+
+// heap sort stuff that operates on the pointer array
+#define LEFT_CHILD(x) (2*x + 1)
+#define RIGHT_CHILD(x) (2*x + 2)
+#define PARENT(x) ((x-1)/2)
+
+void sift_down(void **arr, size_t pos, size_t arr_len) {
+	while(LEFT_CHILD(pos) < arr_len) {
+		size_t smaller = LEFT_CHILD(pos);
+		if (RIGHT_CHILD(pos) < arr_len && GET_SIZE(HDRP(arr[RIGHT_CHILD(pos)])) < GET_SIZE(HDRP(arr[LEFT_CHILD(pos)]))) 
+			smaller = RIGHT_CHILD(pos);
+
+		if (GET_SIZE(HDRP(arr[pos])) > GET_SIZE(HDRP(arr[smaller]))) {
+			void *temp = arr[pos];
+			arr[pos] = arr[smaller];
+			arr[smaller] = temp;
+			pos = smaller;
+		}
+		else{
+			break;
+		}
+	}	
+}
+
+void heapify(void **arr, size_t arr_len) {
+	int index = arr_len - 1;
+	while(index >= 0) {
+		sift_down(arr, index, arr_len);	
+		index--;
+	}
+}
+
+void heapsort(void **arr, size_t arr_len) {
+	heapify(arr, arr_len);
+	if (arr_len == 0)
+		return;
+	for (size_t i = arr_len - 1; i > 1; i--) {
+		void *temp = arr[0];
+		arr[0] = arr[i];
+		arr[i] = temp;
+		sift_down(arr, 0, i);
+	}
+}
+
 int heap_info(heap_info_struct *info) {
+	info->num_allocs = num_allocs+2;		// +2 for the two arrays we need
+	info->free_space = 0;
+	info->largest_free_chunk = 0;
+
+	info->size_array = sbrk(ALIGN(info->num_allocs * sizeof(long) + OVERHEAD));
+	if (info->ptr_array == (void *)-1) { // nothing happens on failure
+		return -1;
+	}
+	info->ptr_array = sbrk(ALIGN(info->num_allocs * sizeof(void *) + OVERHEAD));
+	if (info->ptr_array == (void *)-1) {
+		sbrk(-ALIGN(info->num_allocs * sizeof(long) + OVERHEAD));
+		return -1;
+	}
+
+	// we manually fill in array metadata
+	PUT(HDRP(info->size_array), PACK(ALIGN(info->num_allocs * sizeof(long) + OVERHEAD), 1));
+	PUT(HDRP(info->ptr_array), PACK(ALIGN(info->num_allocs * sizeof(void *) + OVERHEAD), 1));
+
+	// terminal block
+	PUT(HDRP(NEXT_BLKP(info->ptr_array)), PACK(0, 1));
+
+	// collect all the information by traversing through the heap
+	void *bp = NEXT_BLKP(prologue_block); // because the prologue isn't actually allocated
+	size_t arr_index = 0;
+	while (GET_SIZE(HDRP(bp))) { // because the terminal block has size 0
+		if (GET_ALLOC(HDRP(bp))) {
+			info->ptr_array[arr_index] = bp;
+			info->size_array[arr_index] = GET_SIZE(HDRP(bp));
+			arr_index++;
+		}
+		else {
+			info->free_space += GET_SIZE(HDRP(bp));
+			if(GET_SIZE(HDRP(bp)) > (size_t) (info->largest_free_chunk)) {
+				info->largest_free_chunk = GET_SIZE(HDRP(bp));
+			}
+		}
+
+		bp = NEXT_BLKP(bp);
+	}
+
+	// we just need to sort the arrays...
+	// we'll use heapsort
+	heapsort(info->ptr_array, info->num_allocs);
+	for (int i = 0; i < info->num_allocs; i++)
+		info->size_array[i] = GET_SIZE(HDRP(info->ptr_array[i]));
+
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+

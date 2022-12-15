@@ -194,16 +194,29 @@ void *calloc(uint64_t num, uint64_t sz) {
 }
 
 void *realloc(void *ptr, uint64_t sz) {
-	// first check if there's enough space in the block already (and that it's actually valid ptr)
-	if (ptr && GET_SIZE(HDRP(ptr)) >= sz)
+	if (ptr == NULL && sz == 0) {
+		return NULL;
+	}
+	else if (ptr != NULL && sz == 0) {
+		free(ptr);
+		return NULL;
+	}
+	else if (ptr == NULL && sz != 0) {
+		return malloc(sz);
+	}
+	else if (GET_SIZE(HDRP(ptr)) >= sz) {
 		return ptr;
+	}
 
-	// else find or add a big enough block, which is what malloc does
 	void *bigger_ptr = malloc(sz);
-	memcpy(bigger_ptr, ptr, GET_SIZE(HDRP(ptr)));
-	free(ptr);
-
-    return bigger_ptr;
+	if (bigger_ptr == NULL) {
+		return ptr;
+	}
+	else {
+		memcpy(bigger_ptr, ptr, GET_SIZE(HDRP(ptr)));
+		free(ptr);
+		return bigger_ptr;
+	}
 }
 
 void defrag() {

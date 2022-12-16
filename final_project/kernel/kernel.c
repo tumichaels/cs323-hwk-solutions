@@ -173,7 +173,7 @@ int brk(proc *p, uintptr_t addr) {
 
 	// handle unmap on contraction
 	if (newbrk < oldbrk) {
-		for (uintptr_t va = oldbrk; va > newbrk; va -= PAGESIZE) {
+		for (uintptr_t va = oldbrk; va >= newbrk; va -= PAGESIZE) {
 			vamapping vamap = virtual_memory_lookup(p->p_pagetable, va);
 			if (vamap.pn != -1){
 				virtual_memory_map(p->p_pagetable, va, PAGEADDRESS(vamap.pn),  PAGESIZE, 0);

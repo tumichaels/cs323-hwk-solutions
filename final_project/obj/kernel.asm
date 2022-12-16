@@ -748,7 +748,7 @@ int brk(proc *p, uintptr_t addr) {
    404dc:	48 8b 45 f0          	mov    -0x10(%rbp),%rax
    404e0:	48 3b 45 e8          	cmp    -0x18(%rbp),%rax
    404e4:	0f 83 af 00 00 00    	jae    40599 <brk+0x123>
-		for (uintptr_t va = oldbrk; va > newbrk; va -= PAGESIZE) {
+		for (uintptr_t va = oldbrk; va >= newbrk; va -= PAGESIZE) {
    404ea:	48 8b 45 e8          	mov    -0x18(%rbp),%rax
    404ee:	48 89 45 f8          	mov    %rax,-0x8(%rbp)
    404f2:	e9 94 00 00 00       	jmp    4058b <brk+0x115>
@@ -796,12 +796,12 @@ int brk(proc *p, uintptr_t addr) {
    40579:	48 98                	cltq   
    4057b:	c6 84 00 20 ff 04 00 	movb   $0x0,0x4ff20(%rax,%rax,1)
    40582:	00 
-		for (uintptr_t va = oldbrk; va > newbrk; va -= PAGESIZE) {
+		for (uintptr_t va = oldbrk; va >= newbrk; va -= PAGESIZE) {
    40583:	48 81 6d f8 00 10 00 	subq   $0x1000,-0x8(%rbp)
    4058a:	00 
    4058b:	48 8b 45 f8          	mov    -0x8(%rbp),%rax
-   4058f:	48 39 45 f0          	cmp    %rax,-0x10(%rbp)
-   40593:	0f 82 5e ff ff ff    	jb     404f7 <brk+0x81>
+   4058f:	48 3b 45 f0          	cmp    -0x10(%rbp),%rax
+   40593:	0f 83 5e ff ff ff    	jae    404f7 <brk+0x81>
 			}
 		}
 	}

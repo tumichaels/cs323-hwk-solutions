@@ -6,7 +6,7 @@
 
 #define MIN_PAYLOAD_SIZE 24	// 16 bytes for 2 addresses, 8 bytes for footer
 
-#define CHUNK_SIZE (1 << 14)
+#define CHUNK_SIZE (1 << 16)
 #define CHUNK_ALIGN(size) (((size) + (CHUNK_SIZE - 1)) & ~(CHUNK_SIZE - 1)) // request memory in multiples of CHUNK_SIZE
 
 #define OVERHEAD (sizeof(block_header))
@@ -42,8 +42,6 @@ void *free_list;
 typedef size_t block_header;
 typedef size_t block_footer;
 
-size_t num_allocs;
-
 // annoyingly, even with lazy allocation, or perhaps because of it, the moment
 // we start filling out the headers, we instantly use up the entire page worth
 // of memory. If I had some more time / motivation / reward, I would definitely
@@ -78,8 +76,6 @@ void free(void *firstbyte) {
 	// add to free_list
 	PREV_FPTR(free_list) = firstbyte;
 	free_list = firstbyte;
-
-	num_allocs--;
 
 	return;
 }
@@ -169,7 +165,6 @@ void *malloc(uint64_t numbytes) {
 	while (bp) {
 		if (GET_SIZE(HDRP(bp)) >= aligned_size) {
 			set_allocated(bp, aligned_size);
-			num_allocs++;
 			return bp;
 		}
 
@@ -182,7 +177,6 @@ void *malloc(uint64_t numbytes) {
 		return NULL;
 	}
 	set_allocated(bp, aligned_size);
-	num_allocs++;
     return bp;
 }
 
@@ -296,48 +290,54 @@ void heapsort(void **arr, size_t arr_len) {
 }
 
 int heap_info(heap_info_struct *info) {
-	info->num_allocs = num_allocs+2;		// +2 for the two arrays we need
-	info->free_space = 0;
-	info->largest_free_chunk = 0;
+	info->num_allocs = 0;
 
-	info->size_array = sbrk(ALIGN(info->num_allocs * sizeof(long) + OVERHEAD));
-	if (info->ptr_array == (void *)-1) { // nothing happens on failure
-		return -1;
-	}
-	info->ptr_array = sbrk(ALIGN(info->num_allocs * sizeof(void *) + OVERHEAD));
-	if (info->ptr_array == (void *)-1) {
-		sbrk(-ALIGN(info->num_allocs * sizeof(long) + OVERHEAD));
-		return -1;
-	}
-
-	// we manually fill in array metadata
-	PUT(HDRP(info->size_array), PACK(ALIGN(info->num_allocs * sizeof(long) + OVERHEAD), 1));
-	PUT(HDRP(info->ptr_array), PACK(ALIGN(info->num_allocs * sizeof(void *) + OVERHEAD), 1));
-
-	// terminal block
-	PUT(HDRP(NEXT_BLKP(info->ptr_array)), PACK(0, 1));
-
-	// collect all the information by traversing through the heap
+	// collect the number of allocs :(
 	void *bp = NEXT_BLKP(prologue_block); // because the prologue isn't actually allocated
-	size_t arr_index = 0;
 	while (GET_SIZE(HDRP(bp))) { // because the terminal block has size 0
-		if (GET_ALLOC(HDRP(bp))) {
-			info->ptr_array[arr_index] = bp;
-			info->size_array[arr_index] = GET_SIZE(HDRP(bp));
-			arr_index++;
-		}
-		else {
-			info->free_space += GET_SIZE(HDRP(bp));
-			if(GET_SIZE(HDRP(bp)) > (size_t) (info->largest_free_chunk)) {
-				info->largest_free_chunk = GET_SIZE(HDRP(bp));
-			}
-		}
-
+		if (GET_ALLOC(HDRP(bp)))
+			info->num_allocs++;
 		bp = NEXT_BLKP(bp);
 	}
 
-	// we just need to sort the arrays...
-	// we'll use heapsort
+	if (info->num_allocs == 0) {
+		info->size_array = NULL;
+		info->ptr_array = NULL;
+	}
+	else {
+		info->size_array = malloc(info->num_allocs * sizeof(long));
+		if (info->size_array == (void *) -1){
+			return -1;
+		}
+		info->ptr_array = malloc(info->num_allocs * sizeof(void *));
+		if (info->ptr_array == (void *) -1){
+			free(info->ptr_array);
+			return -1;
+		}
+	}
+
+	info->free_space = 0;
+	info->largest_free_chunk = 0;
+
+	// iterate through list for free space
+	bp = NEXT_BLKP(prologue_block); // because the prologue isn't actually allocated
+	size_t arr_index = 0;
+	while (GET_SIZE(HDRP(bp))) { // because the terminal block has size 0
+		if (GET_ALLOC(HDRP(bp)) && bp != info->size_array && bp != info->ptr_array){
+			info->size_array[arr_index] = GET_SIZE(HDRP(bp));
+			info->ptr_array[arr_index] = bp;
+			arr_index++;
+		}
+		else if (!GET_ALLOC(HDRP(bp))) {
+			info->free_space += GET_SIZE(HDRP(bp));
+			if ((int)GET_SIZE(HDRP(bp)) > info->largest_free_chunk){
+				info->largest_free_chunk = GET_SIZE(HDRP(bp));
+			}
+		}
+		bp = NEXT_BLKP(bp);
+	}
+
+	// sort the damn arrays
 	heapsort(info->ptr_array, info->num_allocs);
 	for (int i = 0; i < info->num_allocs; i++)
 		info->size_array[i] = GET_SIZE(HDRP(info->ptr_array[i]));

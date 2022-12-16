@@ -287,8 +287,6 @@ void heapify(void **arr, size_t arr_len) {
 
 void heapsort(void **arr, size_t arr_len) {
 	heapify(arr, arr_len);
-	if (arr_len == 0)
-		return;
 	for (int i = arr_len - 1; i >= 0; i--) {
 		void *temp = arr[0];
 		arr[0] = arr[i];
@@ -338,10 +336,6 @@ int heap_info(heap_info_struct *info) {
 		bp = NEXT_BLKP(bp);
 	}
 
-	app_printf(0xa00, "heap_info print:\n");
-	for(int  i = 0 ; i < info->num_allocs; i++){
-		app_printf(0x700, "    ptr: %p, size: 0x%lx\n", info->ptr_array[i], info->size_array[i]);;
-	}
 	// we just need to sort the arrays...
 	// we'll use heapsort
 	heapsort(info->ptr_array, info->num_allocs);
